@@ -378,7 +378,19 @@ Red-flag categories: `fake_authority`, `threat`, `secrecy`, `urgency`, `payment_
 | Hard warn | risk ≥ 85 | "This call is being monitored by Kavach" (both sides hear) + cloned-voice warning + Telegram alert |
 Same warning not repeated within 30 s.
 
-### 8.4 Latency targets (to measure, report real numbers)
+### 8.4 Research-driven design rules (details in `docs/RESEARCH.md`)
+| Rule | Source |
+|---|---|
+| Evon sees the whole call so far, never a single utterance | Shen et al. 2025 (arXiv:2502.03964) |
+| Verdict is SAFE / UNCERTAIN / SCAM; never speak on UNCERTAIN | Shen et al. 2025 |
+| Every red flag must quote evidence present in the transcript (hallucination guard) | Shen et al. 2024 (arXiv:2409.11643) |
+| Evon tags tactic stage (hook, authority, threat, isolation, extraction); risk rewards progression | Vishing-Tactics-Bench 2026; Chang & Danescu-Niculescu-Mizil 2019 |
+| Mask OTP/account/card/Aadhaar/phone digits as tags before Evon | MASK 2025 (arXiv:2510.18493) |
+| No denoiser in front of Prisma | Iwamoto et al. 2022 (arXiv:2201.06685) |
+| Borderline risk: 3 parallel Evon samples, majority vote before hard warning | Self-consistency, Wang et al. 2023 |
+| Eval: near-domain hard negatives, balanced metrics, frozen set, paraphrased scam variants, MUSAN noise | TeleAntiFraud-28k / 2.0; Li et al. 2025; MUSAN |
+
+### 8.5 Latency targets (to measure, report real numbers)
 | Step | Target |
 |---|---|
 | End of utterance → Prisma transcript | 0.3–0.8 s |
