@@ -1,2 +1,6 @@
 requests
 python-dotenv
+websockets>=13
+numpy
+sounddevice
+pytest
