@@ -1,0 +1,69 @@
+"""Checks a hosted Evon v3.3 endpoint: latency and verdicts on sample calls.
+
+Set EVON_BASE_URL (and EVON_API_KEY if the server needs one) in .env, then:
+    python scripts/evon_check.py
+    python scripts/evon_check.py --samples 3   # also test the majority vote
+"""
+
+import argparse
+import asyncio
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from kavach import config  # noqa: E402,F401  (loads .env)
+from kavach.detect.evon import EvonClient  # noqa: E402
+
+CASES = {
+    "digital arrest (scam)": [
+        "नमस्ते, मैं सी बी आई ऑफिस से बोल रहा हूं",
+        "आपके नाम पर एक पार्सल में ड्रग्स मिले हैं, आपके खिलाफ अरेस्ट वारंट है",
+        "यह बात किसी को मत बताना, वीडियो कॉल पर बने रहिए",
+        "वेरिफिकेशन के लिए पचास हजार रुपये इस अकाउंट में ट्रांसफर कीजिए",
+    ],
+    "delivery with OTP (genuine)": [
+        "हेलो, मैं अमेज़न डिलीवरी से बोल रहा हूं",
+        "आपका पार्सल आज शाम को आएगा, घर पर कोई होगा?",
+        "डिलीवरी के समय जो ओटीपी आएगा वो दरवाजे पर बता दीजिएगा",
+    ],
+    "bank fraud alert (genuine)": [
+        "Good afternoon, this is the fraud monitoring team from your bank",
+        "We noticed a transaction of 2000 rupees at an online store, was this you?",
+        "Please note, we will never ask for your OTP or PIN. If it wasn't you, reply NO to our SMS",
+    ],
+}
+
+
+async def main(samples: int) -> None:
+    client = EvonClient(timeout_s=30)
+    print(f"Endpoint: {client.base_url}  model: {client.model}\n")
+    try:
+        for name, lines in CASES.items():
+            t0 = time.perf_counter()
+            if samples > 1:
+                v = await client.assess_consistent(lines, samples=samples)
+            else:
+                v = await client.assess(lines)
+            dt = time.perf_counter() - t0
+            print(f"== {name}: {v.verdict} risk={v.risk} type={v.scam_type} stage={v.stage} ({dt:.2f}s)")
+            if v.error:
+                print(f"   error: {v.error}")
+            for f in v.red_flags:
+                print(f"   - {f.category}: {f.evidence}")
+            if v.dropped_flags:
+                print(f"   ({v.dropped_flags} flag(s) dropped: evidence not in transcript)")
+            if v.votes:
+                print(f"   votes: {v.votes}")
+            if v.warning:
+                print(f"   warning: {v.warning}")
+            print()
+    finally:
+        await client.close()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--samples", type=int, default=1)
+    asyncio.run(main(parser.parse_args().samples))
