@@ -36,20 +36,26 @@ class Rechunker:
         return frame
 
 
-def decode_file(path: Path, sample_rate: int) -> bytes:
-    """Decodes any audio file ffmpeg understands into mono int16 PCM."""
-    cmd = [
-        "ffmpeg", "-nostdin", "-loglevel", "error", "-i", str(path),
-        "-ac", "1", "-ar", str(sample_rate), "-f", "s16le", "-",
-    ]
+def decode_file(path: Path, sample_rate: int, via_rate: int | None = None) -> bytes:
+    """Decodes any audio file ffmpeg understands into mono int16 PCM.
+
+    With `via_rate` (e.g. 8000), audio is first reduced to that rate and then
+    resampled to `sample_rate`, which keeps telephone-band quality while
+    delivering the rate the consumer needs.
+    """
+    cmd = ["ffmpeg", "-nostdin", "-loglevel", "error", "-i", str(path), "-ac", "1"]
+    if via_rate:
+        cmd += ["-af", f"aresample={via_rate},aresample={sample_rate}"]
+    cmd += ["-ar", str(sample_rate), "-f", "s16le", "-"]
     return subprocess.run(cmd, check=True, capture_output=True).stdout
 
 
 async def file_source(
-    path: Path, sample_rate: int, chunk_ms: int = 20, realtime: bool = True
+    path: Path, sample_rate: int = 16000, chunk_ms: int = 20, realtime: bool = True,
+    via_rate: int | None = None,
 ) -> AsyncIterator[bytes]:
     """Yields a file's audio in small chunks, paced like a live call by default."""
-    pcm = decode_file(path, sample_rate)
+    pcm = decode_file(path, sample_rate, via_rate)
     step = sample_rate * SAMPLE_WIDTH * chunk_ms // 1000
     loop = asyncio.get_running_loop()
     start = loop.time()

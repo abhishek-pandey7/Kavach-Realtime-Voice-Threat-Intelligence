@@ -9,6 +9,10 @@ Protocol (docs.gnani.ai/api/STT/stt-websocket):
   speech_start, partial_transcript (about every 450 ms, with stable_text and
   volatile_text) and final_transcript events. Verified on Oct 11, 2026.
 - A session lasts at most 15 minutes, so long calls rotate sessions.
+- The `connected` event always reports sample_rate 16000, whatever
+  x-sample-rate says (tested Oct 11, 2026, also with query parameters). To
+  avoid relying on the header, Kavach always streams 16 kHz and upsamples
+  telephone audio locally (see audio.sources.decode_file via_rate).
 """
 
 import asyncio
@@ -43,7 +47,7 @@ class Transcript:
 @dataclass
 class PrismaConfig:
     language: str = "hi-IN"
-    sample_rate: int = 16000
+    sample_rate: int = 16000  # keep at 16000; see module docstring
     min_silence_ms: int = 300  # docs default 500; shorter means faster segments
     max_speech_s: float | None = 15.0  # force a segment during long monologues
     bias_words: list[str] | None = None  # word boosting, letter-only words, max 100

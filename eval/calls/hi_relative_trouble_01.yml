@@ -1,0 +1,12 @@
+# Synthetic scam call for testing. Fictional names only.
+id: hi_relative_trouble_01
+language: hi-IN
+label: scam
+scam_type: relative_in_trouble
+voices: {caller: Omkar, receiver: Bhavna}
+turns:
+  - [caller, "आंटी जी, मैं राहुल का दोस्त बोल रहा हूं, राहुल का एक्सीडेंट हो गया है।"]
+  - [receiver, "क्या? वो ठीक तो है?"]
+  - [caller, "अभी अस्पताल में है, डॉक्टर ऑपरेशन के लिए तुरंत पचास हजार रुपये मांग रहे हैं।"]
+  - [receiver, "मैं उसके पापा को फोन करती हूं।"]
+  - [caller, "नहीं आंटी, अभी किसी को मत बताइए, टाइम नहीं है। इस यूपीआई नंबर पर अभी पैसे भेज दीजिए।"]

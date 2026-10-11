@@ -1,0 +1,12 @@
+# Synthetic genuine call (hard negative): a real bank's fraud check. Fictional.
+id: hi_bank_alert_genuine_01
+language: hi-IN
+label: genuine
+scam_type: none
+voices: {caller: Chitra, receiver: Roopesh}
+turns:
+  - [caller, "नमस्ते, मैं आपके बैंक की फ्रॉड मॉनिटरिंग टीम से बोल रही हूं।"]
+  - [caller, "आपके कार्ड से अभी एक ऑनलाइन स्टोर पर दो हजार रुपये का ट्रांजैक्शन हुआ है, क्या यह आपने किया था?"]
+  - [receiver, "हां, वो मैंने ही किया था।"]
+  - [caller, "ठीक है, धन्यवाद। ध्यान रखिए, बैंक कभी भी आपसे ओटीपी या पिन नहीं मांगता। अगर कोई मांगे तो मत बताइए।"]
+  - [receiver, "जी, धन्यवाद।"]

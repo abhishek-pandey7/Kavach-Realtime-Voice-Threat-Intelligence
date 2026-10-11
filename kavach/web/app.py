@@ -114,9 +114,9 @@ async def start(req: StartRequest):
         path = (CALLS / (req.file or "")).resolve()
         if path.parent != CALLS.resolve() or not path.exists():
             return JSONResponse({"error": "unknown call file"}, status_code=400)
-        source = file_source(path, req.rate)
+        source = file_source(path, 16000, via_rate=req.rate if req.rate != 16000 else None)
     else:
-        source = mic_source(req.rate)
+        source = mic_source(16000)
     hub.history.clear()
     state["task"] = asyncio.create_task(_run(req, source))
     return {"ok": True}
@@ -142,7 +142,7 @@ async def _run(req: StartRequest, source) -> None:
         config, detector, TimbreClient(), play if req.speaker == "local" else RecordingSpeaker(),
         evon=evon, alerter=TelegramAlerter(), on_event=hub.publish,
     )
-    prisma = PrismaStream(gnani_api_key(), PrismaConfig(language=req.language, sample_rate=req.rate))
+    prisma = PrismaStream(gnani_api_key(), PrismaConfig(language=req.language))
     try:
         await session.process(prisma.transcribe(source))
     except asyncio.CancelledError:
