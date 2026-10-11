@@ -13,8 +13,12 @@ Design choices come from docs/RESEARCH.md:
 - Every red flag must quote the transcript; unsupported flags are dropped
   (hallucination guard, Shen et al. 2024).
 - Each verdict names the tactic stage reached (Vishing-Tactics-Bench).
-- Borderline cases can be sampled several times and majority-voted
+- SCAM verdicts are confirmed by sampling several times and majority-voting
   (self-consistency, Wang et al. 2023).
+- The first assessment is greedy (temperature 0) so results are reproducible;
+  only the confirmation samples use some randomness (0.4). At 0.3 for every
+  call, the 4-bit model's verdicts swung by 1 to 2 calls between identical
+  evaluation runs.
 """
 
 import asyncio
@@ -59,13 +63,17 @@ Rules:
    urgency, or secrecy ("tell no one", "stay on the video call").
 2. Also SCAM: someone claiming to be police/CBI/ED/customs says the listener is under "digital
    arrest" or will be arrested over the phone. Real police never do this.
+   Also SCAM: asking the listener to approve a payment request or enter their UPI PIN to
+   "receive" or "get back" money. A UPI PIN is only ever needed to send money, never to receive.
 3. UNCERTAIN: pressure or an official-sounding claim, but no request yet. Wait for more.
 4. SAFE: normal calls, even if they mention parcels, OTPs, banks, payments or police. A delivery
    agent asking for the delivery OTP at the door is normal in India. A bank warning you NOT to share
    your OTP is normal. A family member asking for money without threats or secrecy is normal.
 
 Scam types: {", ".join(SCAM_TYPES)}. Use digital_arrest when the caller claims police/CBI/customs
-and threatens arrest, even if a parcel is mentioned.
+and threatens arrest, even if a parcel is mentioned. Use upi_refund when the caller says money was
+sent by mistake and asks for it back; relative_in_trouble only when they claim a family member
+or friend is in trouble.
 Stages: {", ".join(STAGES)}, none.
 Red-flag categories: {", ".join(CATEGORIES)}.
 
@@ -257,7 +265,7 @@ class EvonClient:
             "messages": messages,
             "temperature": temperature,
             "top_p": 0.95,
-            "max_tokens": 256,
+            "max_tokens": 400,  # schema caps evidence length; Devanagari is token-heavy
             "chat_template_kwargs": {"enable_thinking": False},
         }
         mode = self.json_modes[0]
@@ -284,7 +292,7 @@ class EvonClient:
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"] or ""
 
-    async def assess(self, lines: list[str], language: str = "hi-IN", temperature: float = 0.3) -> Verdict:
+    async def assess(self, lines: list[str], language: str = "hi-IN", temperature: float = 0.0) -> Verdict:
         messages = build_messages(lines, language)
         try:
             content = await asyncio.wait_for(self._complete(messages, temperature), self.timeout_s)
@@ -294,5 +302,5 @@ class EvonClient:
             return Verdict(error=repr(exc))
 
     async def assess_consistent(self, lines: list[str], language: str = "hi-IN", samples: int = 3) -> Verdict:
-        results = await asyncio.gather(*(self.assess(lines, language) for _ in range(samples)))
+        results = await asyncio.gather(*(self.assess(lines, language, temperature=0.4) for _ in range(samples)))
         return majority(list(results))
