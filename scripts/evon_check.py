@@ -3,6 +3,7 @@
 Set EVON_BASE_URL (and EVON_API_KEY if the server needs one) in .env, then:
     python scripts/evon_check.py
     python scripts/evon_check.py --samples 3   # also test the majority vote
+    python scripts/evon_check.py --calls       # score eval/calls scripts turn by turn
 """
 
 import argparse
@@ -36,9 +37,46 @@ CASES = {
 }
 
 
-async def main(samples: int) -> None:
+async def scripted(client: EvonClient) -> None:
+    """Feeds each eval/calls script to Evon turn by turn, like a live call, and scores it."""
+    import statistics
+
+    import yaml
+
+    rows, latencies = [], []
+    for path in sorted((Path(__file__).resolve().parent.parent / "eval" / "calls").glob("*.yml")):
+        script = yaml.safe_load(path.read_text(encoding="utf-8"))
+        lines = [text for _, text in script["turns"]]
+        first_scam_turn, final = None, None
+        for n in range(1, len(lines) + 1):
+            t0 = time.perf_counter()
+            v = await client.assess(lines[:n], script["language"])
+            if v.verdict == "SCAM":  # as in the pipeline: SCAM must survive a majority vote
+                v = await client.assess_consistent(lines[:n], script["language"], samples=3)
+            latencies.append(time.perf_counter() - t0)
+            if v.error is None:  # the pipeline keeps the last good verdict
+                final = v
+            if v.verdict == "SCAM" and first_scam_turn is None:
+                first_scam_turn = n
+        final = final or v
+        correct = (final.verdict == "SCAM") == (script["label"] == "scam")
+        rows.append(correct)
+        print(f"{'✓' if correct else '✗'} {script['id']:<26} label={script['label']:<7} final={final.verdict:<9} "
+              f"type={final.scam_type:<20} first SCAM at turn {first_scam_turn or '-'}/{len(lines)}"
+              f"{'  error=' + final.error if final.error else ''}")
+    print(f"\n{sum(rows)}/{len(rows)} correct. Latency per call: median {statistics.median(latencies):.2f}s, "
+          f"max {max(latencies):.2f}s over {len(latencies)} requests")
+
+
+async def main(samples: int, calls: bool) -> None:
     client = EvonClient(timeout_s=30)
     print(f"Endpoint: {client.base_url}  model: {client.model}\n")
+    if calls:
+        try:
+            await scripted(client)
+        finally:
+            await client.close()
+        return
     try:
         for name, lines in CASES.items():
             t0 = time.perf_counter()
@@ -66,4 +104,6 @@ async def main(samples: int) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--samples", type=int, default=1)
-    asyncio.run(main(parser.parse_args().samples))
+    parser.add_argument("--calls", action="store_true", help="score the scripted calls in eval/calls turn by turn")
+    args = parser.parse_args()
+    asyncio.run(main(args.samples, args.calls))

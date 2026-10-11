@@ -68,8 +68,12 @@ def test_failed_evon_call_is_ignored(detector):
     assert s.verdict is None
 
 
-def test_borderline_scam_needs_vote():
+def test_every_unvoted_scam_needs_vote():
     s = RiskScorer()
+    s.add_verdict(Verdict("SCAM", 98))
+    assert s.needs_vote()
+    s.add_verdict(Verdict("SAFE", 5))
+    assert not s.needs_vote()
     s.add_verdict(Verdict("SCAM", 75))
     assert s.needs_vote()
     s.add_verdict(Verdict("SCAM", 75, votes=["SCAM", "SCAM", "SAFE"]))

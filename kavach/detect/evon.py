@@ -23,6 +23,7 @@ import logging
 import os
 import re
 import statistics
+from difflib import SequenceMatcher
 from collections import Counter
 from dataclasses import dataclass, field
 
@@ -44,33 +45,77 @@ LANGUAGE_NAMES = {
 }
 
 SYSTEM_PROMPT = f"""You are Kavach, a safety system listening to a live phone call in India.
-You receive the transcript so far. Both speakers are mixed into one channel, so infer who
-is the caller from what they say. Numbers like OTPs and account numbers are masked as tags
-such as <OTP> or <ACCOUNT_NO>.
+You get the transcript so far. Both speakers share one channel, so work out who the caller is
+from what they say. Numbers such as OTPs and account numbers are masked as <OTP>, <ACCOUNT_NO>.
 
-Decide whether the CALLER is running a scam on the person who received the call.
+Decide whether the CALLER is scamming the person who received the call.
 
-Common scams: fake police/CBI/ED/customs "digital arrest", parcel with drugs, bank or KYC
-account block, UPI refund or money "sent by mistake", relative in trouble needing money,
-electricity disconnection tonight, lottery/prize/job needing a fee, remote-access apps.
-Scams usually move through stages: hook -> authority -> threat -> isolation -> extraction.
+Rules:
+1. SCAM: the caller asks the listener to send money, pay a fee or fine, share an OTP/PIN/CVV/
+   password with the caller, or install a remote-access app, AND uses pressure: fake authority
+   (police, CBI, customs, bank, government), threats (arrest, case, account block, disconnection),
+   urgency, or secrecy ("tell no one", "stay on the video call").
+2. Also SCAM: someone claiming to be police/CBI/ED/customs says the listener is under "digital
+   arrest" or will be arrested over the phone. Real police never do this.
+3. UNCERTAIN: pressure or an official-sounding claim, but no request yet. Wait for more.
+4. SAFE: normal calls, even if they mention parcels, OTPs, banks, payments or police. A delivery
+   agent asking for the delivery OTP at the door is normal in India. A bank warning you NOT to share
+   your OTP is normal. A family member asking for money without threats or secrecy is normal.
 
-Genuine calls also mention banks, OTPs, parcels, payments and police. A real bank never asks
-for an OTP, PIN or CVV; real police never arrest over a phone or video call; real delivery
-agents ask for a delivery OTP only at the door. Do not flag a call just because such words
-appear. Judge intent and pressure.
+Scam types: {", ".join(SCAM_TYPES)}. Use digital_arrest when the caller claims police/CBI/customs
+and threatens arrest, even if a parcel is mentioned.
+Stages: {", ".join(STAGES)}, none.
+Red-flag categories: {", ".join(CATEGORIES)}.
 
-Return ONLY a JSON object, no other text:
-{{
-  "verdict": "SAFE" | "UNCERTAIN" | "SCAM",
-  "risk": integer 0-100,
-  "scam_type": one of {list(SCAM_TYPES)},
-  "stage": the latest stage reached, one of {list(STAGES) + ["none"]},
-  "red_flags": [{{"category": one of {list(CATEGORIES)}, "evidence": "exact words copied from the transcript"}}],
-  "warning": "if SCAM: one or two short, calm sentences in the listener's language that name the trick, else empty"
-}}
-Use UNCERTAIN when there is not yet enough evidence either way. Keep evidence quotes short
-and copied exactly. Use at most 5 red flags."""
+Reply with ONLY compact JSON, no other text:
+{{"verdict":"SAFE|UNCERTAIN|SCAM","risk":0-100,"scam_type":"...","stage":"...","flags":[{{"category":"...","evidence":"2 to 6 words copied from the transcript"}}]}}
+At most 4 flags. Copy evidence words exactly."""
+
+# Worked examples (few-shot). Short on purpose: the shared prefix is cached by the server.
+EXAMPLES = [
+    (
+        ["नमस्ते मैडम, मैं डिलीवरी बॉय बोल रहा हूं, आपका पार्सल लेकर आया हूं",
+         "पार्सल देते समय आपके फोन पर जो ओटीपी आएगा वो मुझे दरवाजे पर बता दीजिएगा"],
+        '{"verdict":"SAFE","risk":5,"scam_type":"none","stage":"none","flags":[]}',
+    ),
+    (
+        ["मैं मुंबई कस्टम्स से बोल रहा हूं, आपके नाम के पार्सल में ड्रग्स मिले हैं",
+         "आप डिजिटल अरेस्ट में हैं, यह बात किसी को मत बताना",
+         "वेरिफिकेशन के लिए पैसे इस अकाउंट में ट्रांसफर कीजिए"],
+        '{"verdict":"SCAM","risk":95,"scam_type":"digital_arrest","stage":"extraction","flags":'
+        '[{"category":"fake_authority","evidence":"मुंबई कस्टम्स से बोल रहा"},'
+        '{"category":"threat","evidence":"आप डिजिटल अरेस्ट में हैं"},'
+        '{"category":"secrecy","evidence":"किसी को मत बताना"},'
+        '{"category":"payment_demand","evidence":"पैसे इस अकाउंट में ट्रांसफर"}]}',
+    ),
+]
+
+
+# Enforced by the server while generating (llama.cpp / vLLM structured output).
+# maxLength on evidence stops the 4-bit model's occasional repetition loops when
+# copying Devanagari, which otherwise run to the token limit and break the JSON.
+EVIDENCE_MAX_CHARS = 60
+VERDICT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "verdict": {"enum": list(VERDICTS)},
+        "risk": {"type": "integer", "minimum": 0, "maximum": 100},
+        "scam_type": {"enum": list(SCAM_TYPES)},
+        "stage": {"enum": [*STAGES, "none"]},
+        "flags": {
+            "type": "array", "maxItems": 4,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "category": {"enum": list(CATEGORIES)},
+                    "evidence": {"type": "string", "maxLength": EVIDENCE_MAX_CHARS},
+                },
+                "required": ["category", "evidence"],
+            },
+        },
+    },
+    "required": ["verdict", "risk", "scam_type", "stage", "flags"],
+}
 
 
 @dataclass
@@ -95,8 +140,13 @@ class Verdict:
 def build_messages(lines: list[str], language: str) -> list[dict]:
     transcript = "\n".join(f"{i + 1}. {sanitize(line)}" for i, line in enumerate(lines))
     lang = LANGUAGE_NAMES.get(language, "the caller's language")
-    user = f"Listener's language: {lang}\n\nTranscript so far:\n{transcript}"
-    return [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}]
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for example_lines, answer in EXAMPLES:
+        example = "\n".join(f"{i + 1}. {line}" for i, line in enumerate(example_lines))
+        messages.append({"role": "user", "content": f"Transcript so far:\n{example}"})
+        messages.append({"role": "assistant", "content": answer})
+    messages.append({"role": "user", "content": f"Listener's language: {lang}\nTranscript so far:\n{transcript}"})
+    return messages
 
 
 def extract_json(content: str) -> dict:
@@ -111,15 +161,22 @@ def extract_json(content: str) -> dict:
     return obj
 
 
-def _evidence_supported(evidence: str, transcript_norm: str) -> bool:
+def _evidence_supported(evidence: str, transcript_norm: str, min_coverage: float = 0.7) -> bool:
+    """True if the quote really comes from the transcript.
+
+    The 4-bit Evon copies Hindi slightly imperfectly ("हजारी रपये" for "हजार
+    रुपये"), so exact matching rejects genuine quotes. Instead, at least 70% of
+    the quote's characters must appear in order in the transcript, counting
+    only runs of 3+ characters so scattered letters don't add up.
+    """
     ev = normalize(sanitize(evidence))
-    if not ev:
+    if len(ev) < 3:
         return False
     if ev in transcript_norm:
         return True
-    words = ev.split()
-    present = sum(1 for w in words if w in transcript_norm)
-    return len(words) >= 2 and present / len(words) >= 0.7
+    blocks = SequenceMatcher(None, ev, transcript_norm, autojunk=False).get_matching_blocks()
+    covered = sum(b.size for b in blocks if b.size >= 3)
+    return covered / len(ev) >= min_coverage
 
 
 def parse_verdict(obj: dict, lines: list[str]) -> Verdict:
@@ -135,10 +192,13 @@ def parse_verdict(obj: dict, lines: list[str]) -> Verdict:
     stage = obj.get("stage") if obj.get("stage") in STAGES else "none"
 
     flags, dropped = [], 0
-    for raw in obj.get("red_flags") or []:
-        if not isinstance(raw, dict):
+    for raw in obj.get("flags") or obj.get("red_flags") or []:
+        if isinstance(raw, dict):
+            category, evidence = raw.get("category"), str(raw.get("evidence", ""))
+        elif isinstance(raw, (list, tuple)) and len(raw) == 2:
+            category, evidence = raw[0], str(raw[1])
+        else:
             continue
-        category, evidence = raw.get("category"), str(raw.get("evidence", ""))
         if category in CATEGORIES and _evidence_supported(evidence, transcript_norm):
             flags.append(RedFlag(category, evidence))
         else:
@@ -183,7 +243,7 @@ class EvonClient:
         key = api_key or os.environ.get("EVON_API_KEY")
         headers = {"Authorization": f"Bearer {key}"} if key else {}
         self.timeout_s = timeout_s
-        self.json_mode = True
+        self.json_modes = ["schema", "object", None]  # fall back if the server rejects one
         self._http = httpx.AsyncClient(headers=headers, timeout=timeout_s, transport=transport)
 
     async def close(self) -> None:
@@ -195,20 +255,25 @@ class EvonClient:
             "messages": messages,
             "temperature": temperature,
             "top_p": 0.95,
-            "max_tokens": 400,
+            "max_tokens": 256,
             "chat_template_kwargs": {"enable_thinking": False},
         }
-        if self.json_mode:
+        mode = self.json_modes[0]
+        if mode == "schema":
+            body["response_format"] = {"type": "json_schema",
+                                       "json_schema": {"name": "verdict", "schema": VERDICT_SCHEMA}}
+        elif mode == "object":
             body["response_format"] = {"type": "json_object"}
         resp = await self._http.post(f"{self.base_url}/chat/completions", json=body)
-        if resp.status_code == 400 and self.json_mode:
-            # Some servers don't support response_format; retry once without it.
-            self.json_mode = False
+        if resp.status_code == 400 and len(self.json_modes) > 1:
+            # The server doesn't support this response_format; try the next, simpler one.
+            log.info("Evon server rejected response_format %r, falling back", mode)
+            self.json_modes.pop(0)
             return await self._complete(messages, temperature)
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"] or ""
 
-    async def assess(self, lines: list[str], language: str = "hi-IN", temperature: float = 0.6) -> Verdict:
+    async def assess(self, lines: list[str], language: str = "hi-IN", temperature: float = 0.3) -> Verdict:
         messages = build_messages(lines, language)
         try:
             content = await asyncio.wait_for(self._complete(messages, temperature), self.timeout_s)

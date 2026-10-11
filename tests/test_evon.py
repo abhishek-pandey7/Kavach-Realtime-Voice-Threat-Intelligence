@@ -76,7 +76,9 @@ def test_client_sends_openai_request_and_parses_reply():
     v = asyncio.run(run())
     assert v.verdict == "SCAM"
     assert seen["chat_template_kwargs"] == {"enable_thinking": False}
-    assert "Hindi" in seen["messages"][1]["content"]
+    schema = seen["response_format"]["json_schema"]["schema"]
+    assert schema["properties"]["flags"]["items"]["properties"]["evidence"]["maxLength"] == 60
+    assert "Hindi" in seen["messages"][-1]["content"]
 
 
 def test_client_retries_without_json_mode_and_survives_errors():
@@ -84,7 +86,7 @@ def test_client_retries_without_json_mode_and_survives_errors():
 
     def handler(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content)
-        calls.append("response_format" in body)
+        calls.append(body.get("response_format", {}).get("type"))
         if "response_format" in body:
             return httpx.Response(400, json={"error": "unsupported"})
         return httpx.Response(200, json={"choices": [{"message": {"content": "not json"}}]})
@@ -97,5 +99,27 @@ def test_client_retries_without_json_mode_and_survives_errors():
             await client.close()
 
     v = asyncio.run(run())
-    assert calls == [True, False]
+    assert calls == ["json_schema", "json_object", None]
     assert v.error is not None and v.verdict == "UNCERTAIN"
+
+
+def test_compact_flag_pairs_are_parsed():
+    obj = {"verdict": "SCAM", "risk": 90, "flags": [["threat", "पार्सल में ड्रग्स मिले हैं"], ["secrecy", "किसी को मत बताना"]]}
+    v = parse_verdict(obj, LINES)
+    assert [f.category for f in v.red_flags] == ["threat", "secrecy"]
+
+
+def test_few_shot_examples_are_sent_before_the_transcript():
+    from kavach.detect.evon import build_messages
+
+    roles = [m["role"] for m in build_messages(LINES, "hi-IN")]
+    assert roles == ["system", "user", "assistant", "user", "assistant", "user"]
+
+
+def test_evidence_guard_tolerates_small_copy_errors_but_not_inventions():
+    from kavach.detect.evon import _evidence_supported
+    from kavach.detect.normalize import normalize
+
+    transcript = normalize("वेरिफिकेशन के लिए पचास हजार रुपये इस अकाउंट में ट्रांसफर कीजिए")
+    assert _evidence_supported("पचास हजारी रपये इस अकाउंट में ट्रांसफर", transcript)  # garbled copy
+    assert not _evidence_supported("आपका आधार कार्ड ब्लॉक हो जाएगा", transcript)  # not in the call
