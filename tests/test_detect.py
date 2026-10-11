@@ -71,3 +71,9 @@ def test_delivery_with_otp_is_below_soft_warning(detector):
 def test_tamil_and_bengali_drafts_load(detector):
     assert "threat" in categories(detector.scan("நீங்கள் கைது செய்யப்படுவீர்கள்"))
     assert "secrecy" in categories(detector.scan("এই কথা কাউকে বলবেন না"))
+
+
+def test_call_transfer_is_not_a_payment_demand(detector):
+    hits = detector.scan("मैं आपकी कॉल सीबीआई ऑफिसर को ट्रांसफर कर रहा हूँ")
+    assert "payment_demand" not in categories(hits)
+    assert "payment_demand" in categories(detector.scan("सारे पैसे इस अकाउंट में ट्रांसफर कीजिए"))
