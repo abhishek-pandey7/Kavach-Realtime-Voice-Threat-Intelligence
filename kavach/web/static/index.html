@@ -124,6 +124,10 @@
   </label>
   <label><input type="checkbox" id="evon"> Evon</label>
   <label><input type="checkbox" id="browserAudio" checked> Play audio here</label>
+  <span id="callBox" style="display:none; gap:8px; align-items:center">
+    <input id="phone" placeholder="+91 verified number" style="background:var(--panel-2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:170px">
+    <button class="btn" id="callBtn" title="Exotel calls this number; merge it into the suspicious call">Bulao Kavach</button>
+  </span>
   <div class="grow"></div>
   <button class="btn primary" id="startBtn">Start</button>
   <button class="btn" id="stopBtn">Stop</button>
@@ -301,6 +305,7 @@ function handle(e) {
     case "start":
       reset(); setLive(true);
       $("evonPill").textContent = e.evon ? "Evon on" : "Evon off";
+      if (e.source === "exotel") $("status").textContent = "Live call";
       if (e.source === "file" && $("browserAudio").checked) {
         const a = $("callAudio"); a.src = `/api/calls/${encodeURIComponent(e.file)}`; a.volume = 1; a.play().catch(() => {});
       }
@@ -337,6 +342,14 @@ $("startBtn").onclick = async () => {
 $("stopBtn").onclick = () => fetch("/api/stop", { method: "POST" });
 $("filmBtn").onclick = () => document.body.classList.toggle("filming");
 document.addEventListener("keydown", (e) => { if (e.key === "f" && e.target.tagName !== "INPUT") document.body.classList.toggle("filming"); });
+
+$("callBtn").onclick = async () => {
+  const r = await fetch("/api/exotel/call", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ to: $("phone").value.trim(), language: $("lang").value }) });
+  const j = await r.json();
+  alert(r.ok ? "Calling you now. Answer, then merge it into the suspicious call." : (j.error || "Call failed"));
+};
+fetch("/api/config").then(r => r.json()).then(c => { if (c.exotel) $("callBox").style.display = "flex"; });
 
 loadCalls();
 connect();
