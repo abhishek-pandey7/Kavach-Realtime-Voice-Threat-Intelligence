@@ -39,7 +39,7 @@ Notebook cells:
 ```bash
 # 1. Build llama.cpp with CUDA (about 10 to 15 minutes)
 !git clone --depth 1 https://github.com/ggml-org/llama.cpp
-!cd llama.cpp && cmake -B build -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build -j --target llama-server
+!cd llama.cpp && cmake -B build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=75 -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA_NO_VMM=ON && cmake --build build -j --target llama-server
 ```
 
 ```bash
@@ -71,6 +71,7 @@ Put the printed URL plus `/v1` in `EVON_BASE_URL`, and the API key in `EVON_API_
 Notes:
 - The tunnel URL changes every session. Kaggle sessions stop after 12 hours or when idle.
 - The model goes to `/tmp/models` because Kaggle's `/kaggle/working` folder is capped at about 20 GB, smaller than the 23 GB file. `/tmp` is wiped when the session ends, so the download (a few minutes) repeats each session. Check the free space shown by `df -h /tmp` before downloading.
+- `GGML_CUDA_NO_VMM=ON` is needed on Kaggle: without it CMake stops with `Target "ggml-cuda" links to: CUDA::cuda_driver but the target was not found`, because Kaggle images have no `libcuda.so` to link against.
 - If the build fails on `nemotron_h_moe`, the repo notes it was tested at llama.cpp commit `8b4b3558f1459c13e4aa38d5c94d306a00dc6acd`; check that commit out instead of the latest.
 
 ## Option B: rented GPU with vLLM (for demo filming)
