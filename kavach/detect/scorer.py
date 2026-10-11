@@ -113,6 +113,11 @@ class RiskScorer:
         )
 
     def needs_vote(self) -> bool:
-        """Borderline SCAM verdicts get a self-consistency vote before HARD."""
+        """A SCAM verdict must survive a self-consistency vote before it can reach HARD.
+
+        On Evon v3.3 a single sample sometimes flips to SCAM for one turn of a
+        genuine call (seen on a real bank fraud-alert script), so every unvoted
+        SCAM verdict is re-checked with a majority of several samples.
+        """
         v = self.verdict
-        return v is not None and v.verdict == "SCAM" and SOFT_AT <= v.risk < HARD_AT + 10 and not v.votes
+        return v is not None and v.verdict == "SCAM" and not v.votes
