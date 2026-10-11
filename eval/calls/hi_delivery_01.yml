@@ -1,0 +1,13 @@
+# Synthetic genuine call (hard negative): delivery with an OTP. Fictional.
+id: hi_delivery_01
+language: hi-IN
+label: genuine
+scam_type: none
+voices: {caller: Hemraj, receiver: Nalini}
+turns:
+  - [caller, "नमस्ते मैडम, मैं डिलीवरी बॉय बोल रहा हूं, आपका पार्सल लेकर आया हूं।"]
+  - [receiver, "अच्छा, आप कहां हैं?"]
+  - [caller, "मैं आपकी सोसाइटी के गेट पर हूं, गार्ड अंदर नहीं आने दे रहा।"]
+  - [receiver, "ठीक है, मैं गार्ड से बात कर लेती हूं।"]
+  - [caller, "जी, और पार्सल देते समय आपके फोन पर जो ओटीपी आएगा वो मुझे दरवाजे पर बता दीजिएगा।"]
+  - [receiver, "ठीक है, पांच मिनट में आती हूं।"]
