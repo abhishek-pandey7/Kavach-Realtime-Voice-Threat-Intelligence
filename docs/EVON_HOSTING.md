@@ -43,14 +43,14 @@ Notebook cells:
 ```bash
 # 2. Download the model (23 GB, plus licence files)
 !pip -q install -U huggingface_hub
-!hf download luminenio/gnani-evon-v3.3-30B-A3B-GGUF gnani-evon-v3.3-30B-A3B-Q4_K_M.gguf LICENSE LICENSE-NVIDIA NOTICE --local-dir /kaggle/working/models
-!ls -lh /kaggle/working/models
+!hf download luminenio/gnani-evon-v3.3-30B-A3B-GGUF gnani-evon-v3.3-30B-A3B-Q4_K_M.gguf LICENSE LICENSE-NVIDIA NOTICE --local-dir /tmp/models
+!df -h /tmp && ls -lh /tmp/models
 ```
 
 ```bash
 # 3. Start the server in the background (pick a long random API key)
 !nohup ./llama.cpp/build/bin/llama-server \
-    -m /kaggle/working/models/gnani-evon-v3.3-30B-A3B-Q4_K_M.gguf \
+    -m /tmp/models/gnani-evon-v3.3-30B-A3B-Q4_K_M.gguf \
     -ngl 99 -c 16384 --jinja \
     --host 0.0.0.0 --port 8080 --api-key CHANGE_ME_LONG_RANDOM \
     > server.log 2>&1 &
@@ -68,7 +68,7 @@ Put the printed URL plus `/v1` in `EVON_BASE_URL`, and the API key in `EVON_API_
 
 Notes:
 - The tunnel URL changes every session. Kaggle sessions stop after 12 hours or when idle.
-- Kaggle's `/kaggle/working` keeps about 20 GB between sessions; larger files may need `/kaggle/tmp` (re-downloaded each session). If the download runs out of space, change `--local-dir` to `/kaggle/tmp/models` and the `-m` path to match.
+- The model goes to `/tmp/models` because Kaggle's `/kaggle/working` folder is capped at about 20 GB, smaller than the 23 GB file. `/tmp` is wiped when the session ends, so the download (a few minutes) repeats each session. Check the free space shown by `df -h /tmp` before downloading.
 - If the build fails on `nemotron_h_moe`, the repo notes it was tested at llama.cpp commit `8b4b3558f1459c13e4aa38d5c94d306a00dc6acd`; check that commit out instead of the latest.
 
 ## Option B: rented GPU with vLLM (for demo filming)
