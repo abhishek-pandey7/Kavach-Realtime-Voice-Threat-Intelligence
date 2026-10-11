@@ -4,7 +4,7 @@
 
 Built for Gnani AI's [Great Indian AI Internship Challenge](https://www.gnani.ai/internship) ("Build Sovereign AI for India"), entirely on Gnani AI's own speech and language models.
 
-> Status: in active development (October 2026). All data used in this project is synthetic or staged with consent. See [Data and privacy](#data-and-privacy).
+> Status: working prototype in active development (October 2026). All data used in this project is synthetic or staged with consent. See [Data and privacy](#data-and-privacy).
 
 ---
 
@@ -146,27 +146,82 @@ Full notes, including what each paper changed in our design, are in [docs/RESEAR
 
 ## Project status and roadmap
 
-- [x] Gnani API access verified: Timbre v2.5 synthesis and Prisma v2.5 transcription working (`scripts/smoke_test.py`)
-- [ ] Live microphone to Prisma streaming client
-- [ ] Red-flag lexicon (Hindi, Hinglish, English, Tamil, Bengali)
-- [ ] Self-hosted Evon v3.3 returning structured verdicts
-- [ ] Risk scorer, escalation ladder and spoken warnings
-- [ ] Family alerts and live dashboard
-- [ ] Voice-cloned warnings (with consent)
-- [ ] Evaluation pipeline and report
-- [ ] Merge-in mode over telephony
+- [x] Gnani API access verified: Timbre v2.5 synthesis and Prisma v2.5 transcription (`scripts/smoke_test.py`)
+- [x] Prisma v2.5 streaming client from file or microphone, with partial transcripts about every 450 ms
+- [x] Red-flag lexicon: Hindi (Devanagari and Hinglish), English, draft Tamil and Bengali; OTP and ID masking
+- [x] Evon v3.3 client: structured verdicts, evidence guard, majority vote; Kaggle notebook to host it for free
+- [x] Risk scorer with escalation ladder; spoken warnings with Timbre v2.5 (cached)
+- [x] End-to-end pipeline, Telegram family alerts, live dashboard
+- [x] Voice-cloned warnings (with consent)
+- [x] Evaluation pipeline with telephone and noise simulation; first results below
+- [x] Exotel adapter for merge-in mode (written to the documented protocol, waiting for account access)
+- [ ] Evon hosted and measured on real calls
+- [ ] Larger evaluation set (Evon-generated scripts, human-recorded calls, recorded noise)
+- [ ] Post-call debrief and 1930 report draft
 
 **Later:** carrier-level integration, an on-device model for phones without a companion device, all ten Prisma languages, voice-deepfake detection, and a "scam drill" mode that lets families practise with simulated calls.
 
-## Setup
+### First results (October 11, 2026)
 
-Requires Python 3.10+ and a Gnani AI API key with speech-to-text and text-to-speech access.
+Keywords only (Evon not yet hosted), 6 synthetic Hindi calls: 3 scams (digital arrest, bank KYC, relative in trouble) and 3 genuine look-alikes (delivery OTP, real bank fraud alert, a son asking for hostel fees). Each call was passed through a simulated phone line (8 kHz, 300 to 3,400 Hz, G.711) with noise at decreasing signal-to-noise ratios.
+
+| Condition | Scams warned | False alarms | Prisma character error rate |
+|---|---|---|---|
+| Phone line | 3 of 3 | 0 of 3 | 3.9% |
+| Phone line, noise at 10 dB | 3 of 3 | 0 of 3 | 3.8% |
+| Phone line, noise at 5 dB | 3 of 3 | 0 of 3 | 4.0% |
+| Phone line, noise at 0 dB | 3 of 3 | 0 of 3 | 4.2% |
+
+The median warning came about 17 seconds after the first red flag. This is a small smoke test, not a benchmark: the noise is generated (pink noise and mains hum), and the calls are TTS voices. Full table in [eval/REPORT.md](eval/REPORT.md).
+
+## Running it
+
+Requires Python 3.10+, ffmpeg, and a Gnani AI API key with speech-to-text and text-to-speech access. Copy `.env.example` to `.env` and fill in what you have.
 
 ```bash
 python -m venv .venv
-.venv/Scripts/pip install -r requirements.txt     # Windows (use .venv/bin/pip on Linux/macOS)
-echo GNANI_API_KEY=your_key_here > .env
-.venv/Scripts/python scripts/smoke_test.py        # Timbre speaks a test line, Prisma transcribes it
+.venv/Scripts/pip install -r requirements.txt          # Windows (use .venv/bin/pip on Linux/macOS)
+.venv/Scripts/python scripts/smoke_test.py             # Timbre speaks a line, Prisma transcribes it
+```
+
+| What | Command |
+|---|---|
+| Live transcription | `python scripts/transcribe_stream.py --mic` or `--file call.wav --rate 8000` |
+| Make a test call from a script | `python scripts/synth_call.py eval/calls/hi_digital_arrest_01.yml` |
+| Kavach on a recorded call | `python scripts/run_kavach.py --file cache/calls/hi_digital_arrest_01.wav --rate 8000` |
+| Guardian mode (speakerphone) | `python scripts/run_kavach.py --mic --speaker local --evon` |
+| Live dashboard | `python -m kavach.web.app`, then open http://localhost:8765 (press `f` for film mode) |
+| Evaluation | `python scripts/run_eval.py --conditions phone,phone_snr10,phone_snr5,phone_snr0` |
+| Pre-generate warnings | `python scripts/prebuild_warnings.py --lang hi-IN` |
+| Clone a family voice (with consent) | `python scripts/clone_voice.py --name son --audio son.wav --consent` |
+| Check a hosted Evon | `python scripts/evon_check.py` |
+| Tests | `python -m pytest -q tests` |
+
+Hosting Evon: [docs/EVON_HOSTING.md](docs/EVON_HOSTING.md) (free on Kaggle with `deploy/kaggle_evon.ipynb`). Merge-in mode: [docs/EXOTEL_SETUP.md](docs/EXOTEL_SETUP.md).
+
+### Notes on Gnani's APIs from building this
+
+- Prisma's streaming endpoint accepts an undocumented `x-partials: true` header and then sends `partial_transcript` events about every 450 ms. Kavach scans partials, so it can react mid-sentence.
+- Prisma's `connected` event always reports a 16 kHz sample rate, whatever `x-sample-rate` says, so Kavach always streams 16 kHz and simulates telephone bandwidth locally.
+- Prisma sometimes spaces out acronyms ("सी बी आई"), so the lexicon matches spaced and joined forms.
+
+## Project layout
+
+```
+kavach/
+  audio/       file and microphone sources, frame rechunking
+  stt/         Prisma v2.5 streaming client
+  detect/      normalisation and masking, keyword lexicons, Evon client, risk scorer
+  speak/       Timbre v2.5 and voice cloning, warning texts, playback
+  alerts/      Telegram family alerts
+  telephony/   Exotel AgentStream adapter
+  eval/        telephone and noise simulation, evaluation runner
+  web/         dashboard server and page
+  pipeline.py  one Kavach session, end to end
+scripts/       command-line tools listed above
+eval/calls/    synthetic call scripts (fictional names and numbers)
+deploy/        Kaggle notebook for Evon
+docs/          research notes, hosting and telephony guides
 ```
 
 ## Limitations
