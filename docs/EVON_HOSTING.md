@@ -25,6 +25,8 @@ This prints a verdict and the latency for a scam call and two genuine calls.
 
 ## Option A: Kaggle, free (recommended to start)
 
+**Fastest path:** import `deploy/kaggle_evon.ipynb` into Kaggle (**File → Import Notebook**), set **GPU T4 x2** and **Internet on**, then **Run All**. It builds llama.cpp, downloads Evon, starts the server, runs a Hindi test and prints the three `.env` lines. The manual steps below do the same thing.
+
 Kaggle gives 2 × T4 GPUs (32 GB VRAM total) for about 30 GPU-hours a week. Q4_K_M (23 GB) fits entirely on the GPUs.
 
 Before you start:
