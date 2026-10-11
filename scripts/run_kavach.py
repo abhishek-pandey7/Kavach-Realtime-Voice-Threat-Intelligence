@@ -57,12 +57,12 @@ def print_event(e: dict) -> None:
 
 
 async def main(args: argparse.Namespace) -> None:
-    prisma = PrismaStream(gnani_api_key(), PrismaConfig(language=args.lang, sample_rate=args.rate))
+    prisma = PrismaStream(gnani_api_key(), PrismaConfig(language=args.lang))
     if args.mic:
-        source = mic_source(args.rate)
+        source = mic_source(16000)
         print("Listening. Put the call on speaker. Ctrl+C to stop.\n")
     else:
-        source = file_source(Path(args.file), args.rate)
+        source = file_source(Path(args.file), 16000, via_rate=args.rate if args.rate != 16000 else None)
 
     speaker = play if args.speaker == "local" else RecordingSpeaker()
     evon = EvonClient() if args.evon else None
@@ -90,7 +90,8 @@ if __name__ == "__main__":
     src.add_argument("--file")
     src.add_argument("--mic", action="store_true")
     parser.add_argument("--lang", default="hi-IN")
-    parser.add_argument("--rate", type=int, default=16000, choices=[8000, 16000])
+    parser.add_argument("--rate", type=int, default=16000, choices=[8000, 16000],
+                        help="8000 simulates telephone bandwidth; Prisma always gets 16 kHz")
     parser.add_argument("--evon", action="store_true", help="use the hosted Evon (EVON_BASE_URL)")
     parser.add_argument("--speaker", choices=["record", "local"], default="record")
     parser.add_argument("--family-voice", help="name of a cloned voice in cache/voices/")

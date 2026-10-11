@@ -1,0 +1,12 @@
+# Synthetic genuine call (hard negative): a relative asking for money for real. Fictional.
+id: hi_family_genuine_01
+language: hi-IN
+label: genuine
+scam_type: none
+voices: {caller: Jalaj, receiver: Ambuja}
+turns:
+  - [caller, "हेलो मम्मी, मैं बोल रहा हूं। हॉस्टल की फीस इस महीने जमा करनी है।"]
+  - [receiver, "कितनी है बेटा?"]
+  - [caller, "बारह हजार रुपये, अगले हफ्ते तक जमा करनी है। पापा से बात कर लेना।"]
+  - [receiver, "ठीक है, शाम को पापा भेज देंगे। खाना ठीक से खा रहे हो ना?"]
+  - [caller, "हां मम्मी, सब ठीक है। रविवार को फोन करूंगा।"]

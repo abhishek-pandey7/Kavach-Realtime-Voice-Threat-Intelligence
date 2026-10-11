@@ -21,14 +21,15 @@ from kavach.stt.prisma import PrismaConfig, PrismaStream  # noqa: E402
 
 
 async def main(args: argparse.Namespace) -> None:
-    config = PrismaConfig(language=args.lang, sample_rate=args.rate, min_silence_ms=args.silence_ms,
+    config = PrismaConfig(language=args.lang, sample_rate=16000, min_silence_ms=args.silence_ms,
                           partials=not args.no_partials)
     stream = PrismaStream(gnani_api_key(), config)
     if args.mic:
-        source = mic_source(args.rate)
+        source = mic_source(16000)
         print("Listening on the microphone. Ctrl+C to stop.")
     else:
-        source = file_source(Path(args.file), args.rate, realtime=not args.fast)
+        via = args.rate if args.rate != 16000 else None
+        source = file_source(Path(args.file), 16000, realtime=not args.fast, via_rate=via)
     t0 = time.monotonic()
     async for t in stream.transcribe(source):
         tag = "FINAL  " if t.is_final else "partial"
@@ -41,7 +42,8 @@ if __name__ == "__main__":
     src.add_argument("--file", help="audio file to stream at real-time pace")
     src.add_argument("--mic", action="store_true", help="stream from the default microphone")
     parser.add_argument("--lang", default="hi-IN")
-    parser.add_argument("--rate", type=int, default=16000, choices=[8000, 16000])
+    parser.add_argument("--rate", type=int, default=16000, choices=[8000, 16000],
+                        help="8000 simulates telephone bandwidth; audio is still streamed at 16 kHz")
     parser.add_argument("--silence-ms", type=int, default=300)
     parser.add_argument("--no-partials", action="store_true", help="only final transcripts")
     parser.add_argument("--fast", action="store_true", help="don't pace file audio in real time")
