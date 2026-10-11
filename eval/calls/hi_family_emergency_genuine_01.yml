@@ -1,0 +1,13 @@
+# Synthetic genuine call (hard negative), a real family emergency asking for money with no secrecy or threats. Fictional.
+id: hi_family_emergency_genuine_01
+language: hi-IN
+label: genuine
+scam_type: none
+reviewed: false
+voices: {caller: Roopesh, receiver: Ambuja}
+turns:
+- [caller, 'मां, मैं सुरेश बोल रहा हूं। पापा का बीपी बढ़ गया था, हम उन्हें सिटी अस्पताल ले आए हैं।']
+- [receiver, 'हे भगवान, अब कैसे हैं?']
+- [caller, 'अब ठीक हैं, डॉक्टर ने एक रात रुकने को कहा है। जमा करने के लिए बीस हजार रुपये चाहिए।']
+- [caller, 'आप दीदी को भी फोन कर दो, और मेरे खाते में भेज दो जब हो सके। मैं रसीद की फोटो भेज दूंगा।']
+- [receiver, 'ठीक है बेटा, अभी भेजती हूं।']

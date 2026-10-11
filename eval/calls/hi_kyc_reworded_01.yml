@@ -1,0 +1,13 @@
+# Synthetic scam call written for evaluation. Deliberately avoids the keyword lexicon (no OTP, KYC, block, transfer) to test Evon on meaning alone.
+id: hi_kyc_reworded_01
+language: hi-IN
+label: scam
+scam_type: bank_kyc
+reviewed: false
+voices: {caller: Omkar, receiver: Urmila}
+turns:
+- [caller, 'नमस्ते जी, मैं आपके बैंक की शाखा से बोल रहा हूं। आपके खाते का दस्तावेज वाला काम अधूरा रह गया है।']
+- [receiver, 'कौन सा काम?']
+- [caller, पहचान का सत्यापन। अगर आज नहीं हुआ तो कल से आप अपने खाते से पैसे नहीं निकाल पाएंगे।]
+- [receiver, 'तो मुझे बैंक आना होगा?']
+- [caller, 'नहीं, आने की जरूरत नहीं। आपके फोन पर अभी छह अंकों का एक संदेश आएगा, बस वो अंक मुझे पढ़कर सुना दीजिए, मैं यहीं से काम पूरा कर दूंगा।']

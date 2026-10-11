@@ -1,0 +1,14 @@
+# Synthetic scam call written for evaluation. Fictional names and numbers only.
+id: hi_upi_refund_01
+language: hi-IN
+label: scam
+scam_type: upi_refund
+reviewed: false
+voices: {caller: Jalaj, receiver: Urmila}
+turns:
+- [caller, 'हेलो भाभी जी, माफ कीजिए, मुझसे गलती से आपके नंबर पर पांच हजार रुपये चले गए।']
+- [receiver, 'अच्छा? मुझे तो कोई मैसेज नहीं दिखा।']
+- [caller, 'आ गए होंगे, बैंक का मैसेज देर से आता है। मेरी मां अस्पताल में है, वही पैसे थे, प्लीज लौटा दीजिए।']
+- [receiver, 'ठीक है, मैं देखती हूं।']
+- [caller, 'मैं आपको एक रिक्वेस्ट भेज रहा हूं, उसे एक्सेप्ट करके अपना यूपीआई पिन डाल दीजिए, पैसे वापस आ जाएंगे।']
+- [caller, 'जल्दी कीजिए भाभी जी, डॉक्टर इंतजार कर रहे हैं।']
