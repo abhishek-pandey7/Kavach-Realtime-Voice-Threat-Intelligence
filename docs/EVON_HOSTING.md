@@ -20,7 +20,7 @@ This prints a verdict and the latency for a scam call and two genuine calls.
 
 - 30B total parameters, about 3.5B active per token (hybrid Mamba2-Transformer MoE, architecture `nemotron_h`).
 - Official weights: [gnani/gnani-evon-v3.3-30B-A3B](https://huggingface.co/gnani/gnani-evon-v3.3-30B-A3B), BF16, about 60 GB. Needs vLLM 0.12+ or SGLang.
-- Community GGUF: [luminenio/gnani-evon-v3.3-30B-A3B-GGUF](https://huggingface.co/luminenio/gnani-evon-v3.3-30B-A3B-GGUF). **Downloads need approval from the repo maintainer, so request access early.** Sizes: Q4_K_M 23.0 GB, IQ4_XS 17.1 GB, Q8_0 31.5 GB. Needs a recent llama.cpp with `nemotron_h_moe` support.
+- Community GGUF: [luminenio/gnani-evon-v3.3-30B-A3B-GGUF](https://huggingface.co/luminenio/gnani-evon-v3.3-30B-A3B-GGUF). The model card says downloads need approval, but as of Oct 11, 2026 the repo is **not gated**: the Hub API reports `gated: false` and files download without logging in. Sizes: Q4_K_M 23.0 GB, IQ4_XS 17.1 GB, Q8_0 31.5 GB. Needs a recent llama.cpp with `nemotron_h_moe` support.
 - Recommended sampling: temperature 0.6, top_p 0.95. Kavach turns thinking off for live verdicts (`chat_template_kwargs: {"enable_thinking": false}`).
 
 ## Option A: Kaggle, free (recommended to start)
@@ -28,9 +28,9 @@ This prints a verdict and the latency for a scam call and two genuine calls.
 Kaggle gives 2 × T4 GPUs (32 GB VRAM total) for about 30 GPU-hours a week. Q4_K_M (23 GB) fits entirely on the GPUs.
 
 Before you start:
-1. On Hugging Face, request access to the GGUF repo above and create a **read token**.
-2. On Kaggle, verify your phone number (needed for internet access in notebooks).
-3. Create a notebook. Settings: **Accelerator: GPU T4 x2**, **Internet: on**. Add your Hugging Face token under **Add-ons → Secrets** as `HF_TOKEN`.
+1. On Kaggle, verify your phone number (needed for internet access in notebooks).
+2. Create a notebook (or use **Use this model → Kaggle** on the Hugging Face repo page). Settings: **Accelerator: GPU T4 x2**, **Internet: on**.
+3. No Hugging Face token is needed while the repo stays ungated. If downloads start failing with 401/403, add a read token under **Add-ons → Secrets** as `HF_TOKEN` and run `os.environ["HF_TOKEN"] = UserSecretsClient().get_secret("HF_TOKEN")` before downloading.
 
 Notebook cells:
 
@@ -40,20 +40,17 @@ Notebook cells:
 !cd llama.cpp && cmake -B build -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build -j --target llama-server
 ```
 
-```python
-# 2. Download the model
-from kaggle_secrets import UserSecretsClient
-import os
-os.environ["HF_TOKEN"] = UserSecretsClient().get_secret("HF_TOKEN")
+```bash
+# 2. Download the model (23 GB, plus licence files)
 !pip -q install -U huggingface_hub
-!hf download luminenio/gnani-evon-v3.3-30B-A3B-GGUF --include "*Q4_K_M*" --local-dir /kaggle/working/models
-!ls -lh /kaggle/working/models
+!hf download luminenio/gnani-evon-v3.3-30B-A3B-GGUF gnani-evon-v3.3-30B-A3B-Q4_K_M.gguf LICENSE LICENSE-NVIDIA NOTICE --local-dir /tmp/models
+!df -h /tmp && ls -lh /tmp/models
 ```
 
 ```bash
 # 3. Start the server in the background (pick a long random API key)
 !nohup ./llama.cpp/build/bin/llama-server \
-    -m /kaggle/working/models/*Q4_K_M*.gguf \
+    -m /tmp/models/gnani-evon-v3.3-30B-A3B-Q4_K_M.gguf \
     -ngl 99 -c 16384 --jinja \
     --host 0.0.0.0 --port 8080 --api-key CHANGE_ME_LONG_RANDOM \
     > server.log 2>&1 &
@@ -71,7 +68,7 @@ Put the printed URL plus `/v1` in `EVON_BASE_URL`, and the API key in `EVON_API_
 
 Notes:
 - The tunnel URL changes every session. Kaggle sessions stop after 12 hours or when idle.
-- If the download pattern matches no file, run `!hf download luminenio/gnani-evon-v3.3-30B-A3B-GGUF --dry-run` (or browse the repo) to get the exact file name.
+- The model goes to `/tmp/models` because Kaggle's `/kaggle/working` folder is capped at about 20 GB, smaller than the 23 GB file. `/tmp` is wiped when the session ends, so the download (a few minutes) repeats each session. Check the free space shown by `df -h /tmp` before downloading.
 - If the build fails on `nemotron_h_moe`, the repo notes it was tested at llama.cpp commit `8b4b3558f1459c13e4aa38d5c94d306a00dc6acd`; check that commit out instead of the latest.
 
 ## Option B: rented GPU with vLLM (for demo filming)
