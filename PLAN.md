@@ -646,7 +646,9 @@ If duo, split cleanly and **both** learn the whole system for individual intervi
 | Oct 11 | Prisma `connected` event always reports 16 kHz regardless of `x-sample-rate`; Kavach now always streams 16 kHz and simulates phone bandwidth locally. |
 | Oct 11 | First eval (keywords only, 6 synthetic Hindi calls, phone line clean to 0 dB SNR): scams warned 3/3, false alarms 0/3 in every condition, Prisma CER ~4%, median warning ~17 s after first red flag. Noise is generated, not recorded. |
 | Oct 11 | Exotel sales call booked for Oct 12, 4 PM (`EXOTEL_MEETING.md`, local only). |
-| | **Next:** host Evon on Kaggle and run `scripts/evon_check.py`; rerun eval with `--evon`; tune thresholds to warn earlier; write more call scripts (Tamil, Bengali, more hard negatives); record real noise into `cache/noise/`; Exotel echo test once AgentStream is enabled; check Gnani credit usage on the dashboard. |
+| Oct 11 | Evon hosted on Kaggle (needed `GGML_CUDA_NO_VMM=ON` to build). Tuned: few-shot prompt, enforced JSON schema (4-bit model loops when copying Devanagari), fuzzy evidence guard, vote before HARD, greedy first pass. Found and fixed scorer bugs (UNCERTAIN muting keywords; unconfirmed SCAM race). |
+| Oct 11 to 12 | 12 more hand-written calls (Evon-written ones unusable). Text eval: keywords 13/18, keywords + Evon 17/18 (miss: task job). **Audio eval, 18 calls x 2 phone conditions: 9/9 scams with HARD warnings, 0/9 false alarms, 0 Evon errors.** Credits used so far: about 45 of 5,000. |
+| | **Next:** live Guardian test with a real phone on speaker; Telegram bot; warn faster (12 to 16 s after first red flag); voice clone with consent; review the 12 Hindi scripts; Exotel sales follow-up (Mon to Fri); write the video script. |
 
 ### Open questions
 - [ ] Registered for the challenge yet? Credits email received?
