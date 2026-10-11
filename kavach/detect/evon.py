@@ -236,7 +236,7 @@ def majority(verdicts: list[Verdict]) -> Verdict:
 
 class EvonClient:
     def __init__(self, base_url: str | None = None, model: str | None = None,
-                 api_key: str | None = None, timeout_s: float = 6.0,
+                 api_key: str | None = None, timeout_s: float = 10.0,
                  transport: httpx.AsyncBaseTransport | None = None):
         self.base_url = (base_url or os.environ.get("EVON_BASE_URL", "http://localhost:8000/v1")).rstrip("/")
         self.model = model or os.environ.get("EVON_MODEL", "model")
