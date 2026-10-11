@@ -77,3 +77,10 @@ def test_call_transfer_is_not_a_payment_demand(detector):
     hits = detector.scan("मैं आपकी कॉल सीबीआई ऑफिसर को ट्रांसफर कर रहा हूँ")
     assert "payment_demand" not in categories(hits)
     assert "payment_demand" in categories(detector.scan("सारे पैसे इस अकाउंट में ट्रांसफर कीजिए"))
+
+
+def test_otp_described_without_the_word(detector):
+    hits = detector.scan("आपके फोन पर अभी छह अंकों का एक संदेश आएगा, बस वो अंक मुझे पढ़कर सुना दीजिए")
+    assert "credential_request" in categories(hits)
+    # A genuine "don't share the code" message must not count as a request in a way that warns alone.
+    assert l1_score(detector.scan("बैंक कभी कोड नहीं मांगता")) < 0.4

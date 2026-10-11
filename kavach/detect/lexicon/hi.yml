@@ -145,6 +145,10 @@ credential_request:
   - आधार कार्ड नंबर
   - कार्ड नंबर
   - कार्ड के पीछे
+  # OTP described without the word: "the code / the six-digit number / the message that came"
+  - re:(?:छह|चार|6|4) अंकों का
+  - re:(?:कोड|अंक|मैसेज|संदेश)\S* (?:मुझे )?(?:बता|पढ़|पढ|सुना)
+  - re:(?:code|message) (?:bata|padh|suna)
   - <otp>
   - <card_no>
   - <aadhaar>

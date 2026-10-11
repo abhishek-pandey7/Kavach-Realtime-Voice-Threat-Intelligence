@@ -123,3 +123,23 @@ def test_evidence_guard_tolerates_small_copy_errors_but_not_inventions():
     transcript = normalize("वेरिफिकेशन के लिए पचास हजार रुपये इस अकाउंट में ट्रांसफर कीजिए")
     assert _evidence_supported("पचास हजारी रपये इस अकाउंट में ट्रांसफर", transcript)  # garbled copy
     assert not _evidence_supported("आपका आधार कार्ड ब्लॉक हो जाएगा", transcript)  # not in the call
+
+
+def test_client_retries_connection_errors():
+    attempts = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        attempts.append(1)
+        if len(attempts) < 3:
+            raise httpx.ConnectError("getaddrinfo failed")
+        return httpx.Response(200, json={"choices": [{"message": {"content": '{"verdict":"SAFE","risk":3}'}}]})
+
+    async def run():
+        client = _client(handler)
+        try:
+            return await client.assess(LINES)
+        finally:
+            await client.close()
+
+    v = asyncio.run(run())
+    assert len(attempts) == 3 and v.verdict == "SAFE" and v.error is None
