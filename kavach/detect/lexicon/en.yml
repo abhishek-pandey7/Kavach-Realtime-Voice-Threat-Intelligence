@@ -1,0 +1,107 @@
+# English red-flag phrases (Prisma en-IN output). Same rules as hi.yml.
+
+hook:
+  - parcel
+  - courier
+  - package in your name
+  - kyc
+  - refund
+  - sent by mistake
+  - electricity bill
+
+fake_authority:
+  - cbi
+  - c b i
+  - police
+  - crime branch
+  - cyber cell
+  - cyber crime
+  - enforcement directorate
+  - customs
+  - narcotics
+  - ncb
+  - rbi
+  - reserve bank
+  - income tax
+  - department of telecom
+  - re:trai (?:office|department)
+  - supreme court
+  - re:(?:ips|senior|investigating) officer
+  - inspector
+  - fedex
+
+threat:
+  - digital arrest
+  - arrest
+  - warrant
+  - re:fir (?:is|has been)? ?(?:registered|filed)
+  - re:case (?:is|has been)? ?(?:registered|filed)
+  - money laundering
+  - drugs
+  - illegal
+  - jail
+  - legal action
+  - re:account (?:will be )?(?:blocked|frozen|suspended|closed)
+  - re:sim (?:will be )?(?:blocked|deactivated)
+  - re:(?:electricity|connection) (?:will be )?(?:cut|disconnected)
+
+secrecy:
+  - re:(?:don't|do not|dont) tell anyone
+  - re:(?:don't|do not|dont) (?:inform|tell) your (?:family|son|daughter|children)
+  - confidential
+  - national secret
+  - re:(?:don't|do not|dont) (?:disconnect|cut|hang up)
+  - re:stay on (?:the )?(?:video )?call
+  - re:(?:keep|switch on) (?:your )?camera
+  - re:(?:go to|sit in) a room alone
+
+urgency:
+  - immediately
+  - right now
+  - re:within (?:one|two|1|2|24) hours?
+  - last chance
+  - before tonight
+
+payment_demand:
+  - re:transfer (?:the )?(?:money|amount|funds)
+  - verification amount
+  - safe account
+  - secure account
+  - pay the fine
+  - security deposit
+  - processing fee
+  - registration fee
+  - gift card
+  - scan the qr code
+
+credential_request:
+  - otp
+  - o t p
+  - upi pin
+  - atm pin
+  - cvv
+  - password
+  - aadhaar number
+  - card number
+  - back of your card
+  - <otp>
+  - <card_no>
+  - <aadhaar>
+
+remote_access:
+  - anydesk
+  - any desk
+  - teamviewer
+  - quick support
+  - screen share
+  - re:download (?:this|the|an) app
+  - apk
+  - click (?:on )?the link
+
+too_good:
+  - lottery
+  - you have won
+  - kbc
+  - cashback
+  - work from home
+  - re:complete (?:the |simple )?tasks?

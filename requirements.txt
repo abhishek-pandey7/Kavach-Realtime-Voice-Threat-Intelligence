@@ -3,4 +3,5 @@ python-dotenv
 websockets>=13
 numpy
 sounddevice
+pyyaml
 pytest
