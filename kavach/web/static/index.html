@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kavach Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;500&family=Noto+Sans+Bengali:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #121821; --panel-2: #18202b; --line: #243042;
+    --text: #e8eef6; --muted: #8a99ad; --faint: #5b6b80;
+    --safe: #2fbf71; --watch: #e5b532; --soft: #f08a24; --hard: #ef4444;
+    --accent: #5b8cff; --chip: #1e2836;
+    --font: "Inter", "Noto Sans Devanagari", "Noto Sans Tamil", "Noto Sans Bengali", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f4f6f9; --panel: #ffffff; --panel-2: #f0f3f7; --line: #dde3eb;
+      --text: #111827; --muted: #5b6474; --faint: #8b95a5; --chip: #eef2f7;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+  body { min-height: 100vh; }
+  header {
+    display: flex; align-items: center; gap: 16px; padding: 14px 24px;
+    border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand b { font-size: 22px; font-weight: 800; letter-spacing: .2px; }
+  .brand span { color: var(--muted); font-size: 13px; }
+  .pill { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--chip); color: var(--muted); }
+  .pill.live { background: rgba(239,68,68,.15); color: var(--hard); }
+  .pill.live::before { content: "● "; animation: blink 1.2s infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .grow { flex: 1; }
+  .clock { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--muted); }
+  button, select { font: inherit; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--text); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .controls label { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+  .controls select { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+  body.filming .controls { display: none; }
+
+  main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: 20px; padding: 20px 24px; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 16px; } header, .controls { padding-left: 16px; padding-right: 16px; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .card h3 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+  .left { display: flex; flex-direction: column; gap: 16px; }
+
+  .gauge { position: relative; display: grid; place-items: center; }
+  .gauge svg { width: 100%; max-width: 320px; }
+  .gauge .num { position: absolute; top: 46%; text-align: center; }
+  .gauge .num b { display: block; font-size: 64px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .gauge .num span { font-size: 13px; color: var(--muted); }
+  .level { text-align: center; margin-top: -6px; font-size: 22px; font-weight: 800; letter-spacing: .02em; }
+  .level small { display: block; font-size: 14px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+
+  .stages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .stage { text-align: center; padding: 10px 4px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); color: var(--faint); transition: all .3s; }
+  .stage b { display: block; font-size: 12px; }
+  .stage span { font-size: 11px; }
+  .stage.on { color: white; border-color: transparent; }
+  .stage.on[data-s="hook"] { background: #6b7280; }
+  .stage.on[data-s="authority"] { background: #b45309; }
+  .stage.on[data-s="threat"] { background: #dc2626; }
+  .stage.on[data-s="isolation"] { background: #9333ea; }
+  .stage.on[data-s="extraction"] { background: #be123c; }
+
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .evon-flags { margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; }
+  .evon-flags li { padding: 6px 0; border-top: 1px dashed var(--line); }
+  .evon-flags i { color: var(--muted); font-style: normal; }
+
+  .transcript { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 210px); overflow-y: auto; padding-right: 6px; scroll-behavior: smooth; }
+  body.filming .transcript { max-height: calc(100vh - 150px); }
+  .line { padding: 12px 14px; border-radius: 12px; background: var(--panel-2); font-size: 18px; line-height: 1.55; animation: rise .25s ease-out; }
+  .line .meta { font-size: 11px; color: var(--faint); margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+  .line.partial { color: var(--muted); font-style: italic; background: transparent; border: 1px dashed var(--line); }
+  .line.flagged { border-left: 4px solid var(--soft); }
+  mark { background: rgba(239,68,68,.22); color: inherit; border-radius: 4px; padding: 0 2px; }
+  .chips { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .chip.authority { color: #f59e0b; } .chip.threat { color: #f87171; } .chip.isolation { color: #c084fc; } .chip.extraction { color: #fb7185; } .chip.hook { color: var(--muted); }
+  .warning { padding: 14px 16px; border-radius: 12px; font-size: 18px; font-weight: 600; line-height: 1.5; animation: rise .3s ease-out; }
+  .warning.SOFT { background: rgba(240,138,36,.14); border: 1px solid rgba(240,138,36,.5); }
+  .warning.HARD { background: rgba(239,68,68,.16); border: 1px solid rgba(239,68,68,.6); }
+  .warning .meta { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+  .warning.SOFT .meta { color: var(--soft); } .warning.HARD .meta { color: var(--hard); }
+  .note { font-size: 13px; color: var(--muted); text-align: center; padding: 8px; }
+  .empty { color: var(--faint); text-align: center; padding: 60px 20px; font-size: 15px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  body.alarm { animation: alarm 1s ease-in-out 3; }
+  @keyframes alarm { 50% { box-shadow: inset 0 0 0 6px var(--hard); } }
+  .disclaimer { position: fixed; right: 12px; bottom: 10px; font-size: 11px; color: var(--faint); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>कवच Kavach</b><span>Realtime voice threat intelligence</span></div>
+  <span id="status" class="pill">Idle</span>
+  <div class="grow"></div>
+  <span id="evonPill" class="pill">Evon off</span>
+  <span class="clock" id="clock">00:00</span>
+  <button class="btn" id="filmBtn" title="Hide controls for recording">Film mode</button>
+</header>
+
+<div class="controls">
+  <label>Source
+    <select id="source"><option value="file">Recorded call</option><option value="mic">Microphone (Guardian)</option></select>
+  </label>
+  <label id="fileLabel">Call <select id="file"></select></label>
+  <label>Language
+    <select id="lang"><option>hi-IN</option><option>en-IN</option><option>ta-IN</option><option>bn-IN</option></select>
+  </label>
+  <label>Audio
+    <select id="rate"><option value="8000">8 kHz phone</option><option value="16000">16 kHz</option></select>
+  </label>
+  <label><input type="checkbox" id="evon"> Evon</label>
+  <label><input type="checkbox" id="browserAudio" checked> Play audio here</label>
+  <div class="grow"></div>
+  <button class="btn primary" id="startBtn">Start</button>
+  <button class="btn" id="stopBtn">Stop</button>
+</div>
+
+<main>
+  <section class="left">
+    <div class="card">
+      <h3>Call risk</h3>
+      <div class="gauge">
+        <svg viewBox="0 0 200 120" aria-hidden="true">
+          <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="var(--line)" stroke-width="14" stroke-linecap="round"/>
+          <path id="arc" d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="var(--safe)" stroke-width="14" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100" style="transition: stroke-dasharray .6s ease, stroke .4s"/>
+        </svg>
+        <div class="num"><b id="risk">0</b><span>/ 100</span></div>
+      </div>
+      <div class="level" id="level">Listening<small>सुन रहा है</small></div>
+    </div>
+
+    <div class="card">
+      <h3>Scam stages detected</h3>
+      <div class="stages">
+        <div class="stage" data-s="hook"><b>Hook</b><span>बहाना</span></div>
+        <div class="stage" data-s="authority"><b>Authority</b><span>फर्जी अफसर</span></div>
+        <div class="stage" data-s="threat"><b>Threat</b><span>धमकी</span></div>
+        <div class="stage" data-s="isolation"><b>Isolation</b><span>चुप रहो</span></div>
+        <div class="stage" data-s="extraction"><b>Extraction</b><span>पैसे / OTP</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Evon v3.3 verdict</h3>
+      <dl class="kv">
+        <dt>Verdict</dt><dd id="evVerdict">–</dd>
+        <dt>Scam type</dt><dd id="evType">–</dd>
+        <dt>Latency</dt><dd id="evLatency">–</dd>
+      </dl>
+      <ul class="evon-flags" id="evFlags"></ul>
+    </div>
+
+    <div class="card">
+      <h3>Timing</h3>
+      <dl class="kv">
+        <dt>First red flag</dt><dd id="tFlag">–</dd>
+        <dt>First warning</dt><dd id="tWarn">–</dd>
+        <dt>Family alert</dt><dd id="tAlert">–</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Live transcript · Gnani Prisma v2.5</h3>
+    <div class="transcript" id="transcript"><div class="empty">Start a session to see the call live.</div></div>
+  </section>
+</main>
+<div class="disclaimer">Staged reenactment · synthetic data</div>
+
+<audio id="callAudio" preload="auto"></audio>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const STAGE_OF = { hook: "hook", too_good: "hook", fake_authority: "authority", threat: "threat", urgency: "threat",
+                   secrecy: "isolation", payment_demand: "extraction", credential_request: "extraction", remote_access: "extraction" };
+const LEVELS = {
+  NONE:  { color: "var(--safe)",  en: "Listening", hi: "सुन रहा है" },
+  WATCH: { color: "var(--watch)", en: "Watching",  hi: "नज़र रखे हुए" },
+  SOFT:  { color: "var(--soft)",  en: "Caution",   hi: "सावधान" },
+  HARD:  { color: "var(--hard)",  en: "SCAM",      hi: "धोखा" },
+};
+let partialEl = null, startedAt = null, clockTimer = null, firstFlag = null, warnQueue = Promise.resolve();
+
+function fmt(s) { if (s == null) return "–"; const m = Math.floor(s / 60), r = (s % 60).toFixed(1); return m ? `${m}:${r.padStart(4, "0")}` : `${r}s`; }
+function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function highlight(text, flags) {
+  let html = escapeHtml(text);
+  for (const f of flags) {
+    const words = f.phrase.split(/\s+/).filter(Boolean).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    if (!words.length) continue;
+    try {
+      const re = new RegExp(words.join("[\\s\\p{P}]*"), "giu");
+      html = html.replace(re, m => `<mark>${m}</mark>`);
+    } catch (e) {}
+  }
+  return html;
+}
+
+function scrollDown() { const t = $("transcript"); t.scrollTop = t.scrollHeight; }
+function clearEmpty() { const e = document.querySelector("#transcript .empty"); if (e) e.remove(); }
+
+function onTranscript(e) {
+  clearEmpty();
+  if (!e.final) {
+    if (!partialEl) { partialEl = document.createElement("div"); partialEl.className = "line partial"; $("transcript").appendChild(partialEl); }
+    partialEl.textContent = e.text + " …";
+    scrollDown();
+    return;
+  }
+  if (partialEl) { partialEl.remove(); partialEl = null; }
+  const el = document.createElement("div");
+  el.className = "line" + (e.flags.length ? " flagged" : "");
+  const chips = [...new Set(e.flags.map(f => f.category))]
+    .map(c => `<span class="chip ${STAGE_OF[c] || ""}">${c.replace(/_/g, " ")}</span>`).join("");
+  el.innerHTML = `<div class="meta">${fmt(e.t)}</div>${highlight(e.text, e.flags)}${chips ? `<div class="chips">${chips}</div>` : ""}`;
+  $("transcript").appendChild(el);
+  if (e.flags.length && firstFlag == null) { firstFlag = e.t; $("tFlag").textContent = fmt(e.t); }
+  scrollDown();
+}
+
+function onRisk(e) {
+  const L = LEVELS[e.level] || LEVELS.NONE;
+  $("risk").textContent = e.risk;
+  $("arc").setAttribute("stroke-dasharray", `${e.risk} 100`);
+  $("arc").setAttribute("stroke", L.color);
+  $("level").innerHTML = `${L.en}<small>${L.hi}</small>`;
+  $("level").style.color = L.color;
+  document.querySelectorAll(".stage").forEach(s => s.classList.toggle("on", e.stages.includes(s.dataset.s)));
+}
+
+function onVerdict(e) {
+  $("evVerdict").textContent = e.error ? "unavailable" : `${e.verdict} (${e.risk})${e.votes && e.votes.length ? " · votes " + e.votes.join("/") : ""}`;
+  $("evType").textContent = e.scam_type.replace(/_/g, " ");
+  $("evLatency").textContent = e.latency_s != null ? `${e.latency_s}s` : "–";
+  $("evFlags").innerHTML = (e.flags || []).map(f => `<li><b>${f.category.replace(/_/g, " ")}</b><br><i>“${escapeHtml(f.evidence)}”</i></li>`).join("");
+}
+
+function onWarning(e) {
+  clearEmpty();
+  const el = document.createElement("div");
+  el.className = `warning ${e.level}`;
+  el.innerHTML = `<div class="meta">🔊 Kavach ${e.level === "HARD" ? "warning" : "caution"}${e.family_voice ? " · family voice" : ""}</div>${escapeHtml(e.text)}`;
+  $("transcript").appendChild(el);
+  if ($("tWarn").textContent === "–") $("tWarn").textContent = fmt(e.at_s) + (firstFlag != null ? `  (+${(e.at_s - firstFlag).toFixed(1)}s)` : "");
+  if (e.level === "HARD") { document.body.classList.remove("alarm"); void document.body.offsetWidth; document.body.classList.add("alarm"); }
+  scrollDown();
+  if ($("browserAudio").checked) {
+    const lang = $("lang").value;
+    warnQueue = warnQueue.then(() => new Promise(resolve => {
+      const call = $("callAudio"); const vol = call.volume; call.volume = 0.25;
+      const a = new Audio(`/api/speech?lang=${encodeURIComponent(lang)}&text=${encodeURIComponent(e.text)}`);
+      a.onended = a.onerror = () => { call.volume = vol; resolve(); };
+      a.play().catch(() => { call.volume = vol; resolve(); });
+    }));
+  }
+}
+
+function onAlert(e) { $("tAlert").textContent = e.sent ? "sent ✓" : "logged (no Telegram)"; }
+
+function setLive(live) {
+  $("status").textContent = live ? "Live" : "Idle";
+  $("status").classList.toggle("live", live);
+  $("startBtn").disabled = live;
+  if (live) {
+    startedAt = performance.now();
+    clearInterval(clockTimer);
+    clockTimer = setInterval(() => {
+      const s = Math.floor((performance.now() - startedAt) / 1000);
+      $("clock").textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+    }, 250);
+  } else {
+    clearInterval(clockTimer);
+    $("callAudio").pause();
+  }
+}
+
+function reset() {
+  $("transcript").innerHTML = ""; partialEl = null; firstFlag = null;
+  ["evVerdict", "evType", "evLatency", "tFlag", "tWarn", "tAlert"].forEach(id => $(id).textContent = "–");
+  $("evFlags").innerHTML = "";
+  onRisk({ risk: 0, level: "NONE", stages: [] });
+}
+
+function handle(e) {
+  switch (e.type) {
+    case "start":
+      reset(); setLive(true);
+      $("evonPill").textContent = e.evon ? "Evon on" : "Evon off";
+      if (e.source === "file" && $("browserAudio").checked) {
+        const a = $("callAudio"); a.src = `/api/calls/${encodeURIComponent(e.file)}`; a.volume = 1; a.play().catch(() => {});
+      }
+      break;
+    case "transcript": onTranscript(e); break;
+    case "risk": onRisk(e); break;
+    case "verdict": onVerdict(e); break;
+    case "warning": onWarning(e); break;
+    case "alert": onAlert(e); break;
+    case "error": clearEmpty(); $("transcript").insertAdjacentHTML("beforeend", `<div class="note">Error: ${escapeHtml(e.message)}</div>`); setLive(false); break;
+    case "end": setLive(false); $("transcript").insertAdjacentHTML("beforeend", `<div class="note">Call ended · peak risk ${e.report.peak_risk} · ${e.report.warnings.length} warning(s)</div>`); scrollDown(); break;
+  }
+}
+
+function connect() {
+  const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+  ws.onmessage = (m) => handle(JSON.parse(m.data));
+  ws.onclose = () => setTimeout(connect, 1000);
+}
+
+async function loadCalls() {
+  const calls = await (await fetch("/api/calls")).json();
+  $("file").innerHTML = calls.map(c => `<option>${c}</option>`).join("") || "<option value=''>(no calls in cache/calls)</option>";
+}
+
+$("source").onchange = () => { $("fileLabel").style.display = $("source").value === "file" ? "" : "none"; };
+$("startBtn").onclick = async () => {
+  const body = { source: $("source").value, file: $("file").value, language: $("lang").value,
+                 rate: +$("rate").value, evon: $("evon").checked,
+                 speaker: $("source").value === "mic" ? "local" : "record" };
+  const r = await fetch("/api/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!r.ok) alert((await r.json()).error || "Could not start");
+};
+$("stopBtn").onclick = () => fetch("/api/stop", { method: "POST" });
+$("filmBtn").onclick = () => document.body.classList.toggle("filming");
+document.addEventListener("keydown", (e) => { if (e.key === "f" && e.target.tagName !== "INPUT") document.body.classList.toggle("filming"); });
+
+loadCalls();
+connect();
+</script>
+</body>
+</html>
