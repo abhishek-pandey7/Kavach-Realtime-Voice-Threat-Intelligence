@@ -155,24 +155,35 @@ Full notes, including what each paper changed in our design, are in [docs/RESEAR
 - [x] Voice-cloned warnings (with consent)
 - [x] Evaluation pipeline with telephone and noise simulation; first results below
 - [x] Exotel adapter for merge-in mode (written to the documented protocol, waiting for account access)
-- [ ] Evon hosted and measured on real calls
-- [ ] Larger evaluation set (Evon-generated scripts, human-recorded calls, recorded noise)
+- [x] Evon hosted on Kaggle, tuned and evaluated (audio: 9/9 scams with hard warnings, 0/9 false alarms)
+- [x] Larger evaluation set: 18 hand-written calls (Evon-written scripts were tried and were not usable)
+- [ ] Human-recorded calls, recorded noise, Tamil and Bengali calls
+- [ ] Warn faster (now 12 to 16 s after the first red flag)
 - [ ] Post-call debrief and 1930 report draft
 
 **Later:** carrier-level integration, an on-device model for phones without a companion device, all ten Prisma languages, voice-deepfake detection, and a "scam drill" mode that lets families practise with simulated calls.
 
-### First results (October 11, 2026)
+### Results so far (October 11 to 12, 2026)
 
-Keywords only (Evon not yet hosted), 6 synthetic Hindi calls: 3 scams (digital arrest, bank KYC, relative in trouble) and 3 genuine look-alikes (delivery OTP, real bank fraud alert, a son asking for hostel fees). Each call was passed through a simulated phone line (8 kHz, 300 to 3,400 Hz, G.711) with noise at decreasing signal-to-noise ratios.
+18 synthetic Hindi calls written for this project: 9 scams (digital arrest, FedEx/police, bank KYC, a KYC scam reworded to avoid every keyword, UPI refund, electricity cut, relative in trouble, KBC lottery, task job) and 9 genuine look-alikes (delivery OTP, a real bank fraud alert, a son asking for fees, a real family emergency, passport police verification, electricity reminder, insurance renewal, job interview, loan offer). Voiced with Timbre v2.5, passed through a simulated phone line (8 kHz, 300 to 3,400 Hz, G.711), streamed through Prisma v2.5, judged by keywords plus a self-hosted Evon v3.3.
 
-| Condition | Scams warned | False alarms | Prisma character error rate |
-|---|---|---|---|
-| Phone line | 3 of 3 | 0 of 3 | 3.9% |
-| Phone line, noise at 10 dB | 3 of 3 | 0 of 3 | 3.8% |
-| Phone line, noise at 5 dB | 3 of 3 | 0 of 3 | 4.0% |
-| Phone line, noise at 0 dB | 3 of 3 | 0 of 3 | 4.2% |
+**Audio, keywords + Evon** ([eval/REPORT.md](eval/REPORT.md)):
 
-The median warning came about 17 seconds after the first red flag. This is a small smoke test, not a benchmark: the noise is generated (pink noise and mains hum), and the calls are TTS voices. Full table in [eval/REPORT.md](eval/REPORT.md).
+| Condition | Scams warned | Hard warning | False alarms | Prisma character error rate |
+|---|---|---|---|---|
+| Phone line | 9 of 9 | 9 of 9 | 0 of 9 | 5.3% |
+| Phone line, noise at 5 dB | 9 of 9 | 9 of 9 | 0 of 9 | 5.4% |
+
+**Text, turn by turn: what Evon adds** ([eval/TEXT_EVAL.md](eval/TEXT_EVAL.md)):
+
+| | Keywords only | Keywords + Evon |
+|---|---|---|
+| Scams warned | 4 of 9 | 8 of 9 |
+| False alarms | 0 of 9 | 0 of 9 |
+
+Keywords alone miss scams that avoid typical words (UPI refund, task job, a reworded KYC scam); Evon catches them from meaning and also warns earlier (digital arrest at turn 3 instead of turn 8).
+
+Caveats: small and synthetic, all Hindi, and two Evon rules were added after seeing misses on these calls, so the numbers are optimistic until confirmed on fresh calls. The median warning comes 12 to 16 seconds after the first red flag, which is the next thing to improve. Earlier keyword-only runs down to 0 dB SNR are in the git history of `eval/REPORT.md`.
 
 ## Running it
 
