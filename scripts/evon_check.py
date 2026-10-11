@@ -4,6 +4,7 @@ Set EVON_BASE_URL (and EVON_API_KEY if the server needs one) in .env, then:
     python scripts/evon_check.py
     python scripts/evon_check.py --samples 3   # also test the majority vote
     python scripts/evon_check.py --calls       # score eval/calls scripts turn by turn
+    python scripts/evon_check.py --calls --generated   # include Evon-written scripts
 """
 
 import argparse
@@ -37,14 +38,16 @@ CASES = {
 }
 
 
-async def scripted(client: EvonClient) -> None:
+async def scripted(client: EvonClient, include_generated: bool = False) -> None:
     """Feeds each eval/calls script to Evon turn by turn, like a live call, and scores it."""
     import statistics
 
     import yaml
 
     rows, latencies = [], []
-    for path in sorted((Path(__file__).resolve().parent.parent / "eval" / "calls").glob("*.yml")):
+    calls_dir = Path(__file__).resolve().parent.parent / "eval" / "calls"
+    paths = sorted(calls_dir.glob("*.yml")) + (sorted((calls_dir / "generated").glob("*.yml")) if include_generated else [])
+    for path in paths:
         script = yaml.safe_load(path.read_text(encoding="utf-8"))
         lines = [text for _, text in script["turns"]]
         first_scam_turn, final = None, None
@@ -68,12 +71,12 @@ async def scripted(client: EvonClient) -> None:
           f"max {max(latencies):.2f}s over {len(latencies)} requests")
 
 
-async def main(samples: int, calls: bool) -> None:
+async def main(samples: int, calls: bool, generated: bool = False) -> None:
     client = EvonClient(timeout_s=30)
     print(f"Endpoint: {client.base_url}  model: {client.model}\n")
     if calls:
         try:
-            await scripted(client)
+            await scripted(client, generated)
         finally:
             await client.close()
         return
@@ -105,5 +108,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--samples", type=int, default=1)
     parser.add_argument("--calls", action="store_true", help="score the scripted calls in eval/calls turn by turn")
+    parser.add_argument("--generated", action="store_true", help="with --calls, also score eval/calls/generated")
     args = parser.parse_args()
-    asyncio.run(main(args.samples, args.calls))
+    asyncio.run(main(args.samples, args.calls, args.generated))

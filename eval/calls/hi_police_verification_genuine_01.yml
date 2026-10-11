@@ -1,0 +1,13 @@
+# Synthetic genuine call (hard negative), routine passport police verification. Fictional.
+id: hi_police_verification_genuine_01
+language: hi-IN
+label: genuine
+scam_type: none
+reviewed: false
+voices: {caller: Hemraj, receiver: Urmila}
+turns:
+- [caller, 'नमस्ते, मैं थाने से हेड कांस्टेबल शर्मा बोल रहा हूं। आपके बेटे के पासपोर्ट का पुलिस वेरिफिकेशन आया है।']
+- [receiver, 'जी, बताइए।']
+- [caller, 'मैं कल सुबह ग्यारह बजे आपके घर आऊंगा। आधार कार्ड, बिजली का बिल और दो पड़ोसियों के नाम तैयार रखिएगा।']
+- [receiver, 'ठीक है, कोई फीस लगेगी?']
+- [caller, 'नहीं, कोई फीस नहीं है। अगर कोई पैसे मांगे तो मत दीजिएगा। कल मिलते हैं।']

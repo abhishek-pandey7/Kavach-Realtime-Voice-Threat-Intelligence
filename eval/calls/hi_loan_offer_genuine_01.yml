@@ -1,0 +1,13 @@
+# Synthetic genuine call (hard negative), bank telemarketing for a loan. Fictional.
+id: hi_loan_offer_genuine_01
+language: hi-IN
+label: genuine
+scam_type: none
+reviewed: false
+voices: {caller: Pranav, receiver: Bhavna}
+turns:
+- [caller, 'नमस्ते मैडम, आपके बैंक की तरफ से आपके लिए पांच लाख तक का प्री अप्रूव्ड पर्सनल लोन ऑफर है।']
+- [receiver, अभी तो जरूरत नहीं है।]
+- [caller, 'कोई बात नहीं मैडम। अगर बाद में जरूरत हो तो बैंक की ऐप में लोन सेक्शन में देख सकती हैं, या नजदीकी शाखा में जा सकती हैं।']
+- [receiver, ठीक है।]
+- [caller, 'धन्यवाद मैडम, आपका दिन शुभ हो।']

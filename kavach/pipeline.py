@@ -126,10 +126,11 @@ class KavachSession:
             lines = self.lines[-self.config.evon_window_lines:]
             started = time.monotonic()
             verdict = await self.evon.assess(lines, self.config.language)
-            self.scorer.add_verdict(verdict)
-            if self.scorer.needs_vote():
+            if verdict.verdict == "SCAM" and not verdict.votes:
+                # Confirm before the scorer sees it: a transcript arriving mid-vote
+                # must not act on an unconfirmed SCAM (caused a false alarm in eval).
                 verdict = await self.evon.assess_consistent(lines, self.config.language, self.config.vote_samples)
-                self.scorer.add_verdict(verdict)
+            self.scorer.add_verdict(verdict)
             await self._emit({
                 "type": "verdict", "verdict": verdict.verdict, "risk": verdict.risk,
                 "scam_type": verdict.scam_type, "stage": verdict.stage, "votes": verdict.votes,

@@ -40,12 +40,19 @@ def test_evon_scam_reaches_hard_and_speaks_once_per_level(detector):
     assert s.evaluate(now=60).speak == Level.HARD  # repeat after 45 s
 
 
-def test_evon_uncertain_never_speaks(detector):
+def test_evon_uncertain_keeps_keyword_soft_warning_but_never_hard(detector):
     s = RiskScorer()
-    feed(s, detector, SCAM_LINES[:2])
+    feed(s, detector, SCAM_LINES)
     s.add_verdict(Verdict("UNCERTAIN", 70))
     state = s.evaluate(now=0)
-    assert state.risk < 65 and state.speak is None
+    assert state.level == Level.SOFT and state.risk < 85
+
+
+def test_evon_uncertain_alone_does_not_speak(detector):
+    s = RiskScorer()
+    feed(s, detector, ["नमस्ते, आप कैसे हैं"])
+    s.add_verdict(Verdict("UNCERTAIN", 70))
+    assert s.evaluate(now=0).speak is None
 
 
 def test_evon_safe_overrides_keyword_false_alarm(detector):

@@ -9,7 +9,10 @@ Escalation ladder:
 
 Rules from docs/RESEARCH.md:
 - Progression through tactic stages adds risk; repeating one stage doesn't.
-- Evon UNCERTAIN never leads to speech (capped below SOFT).
+- Evon UNCERTAIN means "no opinion yet": Kavach behaves as if Evon were
+  absent (keywords can reach SOFT, never HARD) and ignores Evon's risk number
+  and flags. Capping UNCERTAIN below SOFT muted keyword warnings on two real
+  scams, and counting its risk caused a false alarm (evaluation, Oct 11).
 - Evon SAFE overrides keyword false alarms (capped below SOFT).
 - If Evon is unavailable, keywords alone can reach SOFT but not HARD.
 - Levels only rise within a call; HARD is repeated at most every 45 s.
@@ -73,16 +76,15 @@ class RiskScorer:
         hits = list(self.hits.values())
         kw = self.keyword_risk()
         v = self.verdict
-        if v is None:
+        opinion = v if v is not None and v.verdict in ("SCAM", "SAFE") else None
+        if opinion is None:  # no Evon, or UNCERTAIN: keywords decide, never HARD
             risk = min(kw, HARD_AT - 1)
-        elif v.verdict == "SCAM":
-            risk = max(v.risk, kw)
-        elif v.verdict == "SAFE":
-            risk = min(kw, v.risk, SOFT_AT - 1)
-        else:  # UNCERTAIN
-            risk = min(max(kw, v.risk), SOFT_AT - 1)
+        elif opinion.verdict == "SCAM":
+            risk = max(opinion.risk, kw)
+        else:  # SAFE overrides keyword false alarms
+            risk = min(kw, SOFT_AT - 1)
 
-        categories = sorted({h.category for h in hits} | {f.category for f in (v.red_flags if v else [])})
+        categories = sorted({h.category for h in hits} | {f.category for f in (opinion.red_flags if opinion else [])})
         core_categories = {c for c in categories if c not in ("hook", "too_good")}
 
         level = Level.NONE

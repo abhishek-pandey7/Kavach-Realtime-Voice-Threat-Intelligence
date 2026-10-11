@@ -1,0 +1,12 @@
+# Synthetic genuine call (hard negative), official bill reminder with no threats. Fictional.
+id: hi_electricity_genuine_01
+language: hi-IN
+label: genuine
+scam_type: none
+reviewed: false
+voices: {caller: Chitra, receiver: Roopesh}
+turns:
+- [caller, 'नमस्ते, बिजली वितरण कंपनी के ग्राहक सेवा केंद्र से बोल रही हूं। आपका इस महीने का बिल अभी बाकी है।']
+- [receiver, 'अच्छा, आखिरी तारीख कब है?']
+- [caller, पच्चीस तारीख तक भर दीजिए। आप हमारी आधिकारिक ऐप से या बिजली घर जाकर भर सकते हैं।]
+- [caller, 'और हां, हम कभी फोन पर कार्ड की जानकारी या किसी निजी नंबर पर पैसे नहीं मांगते। धन्यवाद।']

@@ -52,7 +52,9 @@ Decide whether the CALLER is scamming the person who received the call.
 
 Rules:
 1. SCAM: the caller asks the listener to send money, pay a fee or fine, share an OTP/PIN/CVV/
-   password with the caller, or install a remote-access app, AND uses pressure: fake authority
+   password with the caller (an OTP is often described as "the code" or "the number that just
+   came on your phone by SMS"; asking to read it out is the same as asking for the OTP), or
+   install a remote-access app, AND uses pressure: fake authority
    (police, CBI, customs, bank, government), threats (arrest, case, account block, disconnection),
    urgency, or secrecy ("tell no one", "stay on the video call").
 2. Also SCAM: someone claiming to be police/CBI/ED/customs says the listener is under "digital
@@ -236,7 +238,7 @@ def majority(verdicts: list[Verdict]) -> Verdict:
 
 class EvonClient:
     def __init__(self, base_url: str | None = None, model: str | None = None,
-                 api_key: str | None = None, timeout_s: float = 6.0,
+                 api_key: str | None = None, timeout_s: float = 10.0,
                  transport: httpx.AsyncBaseTransport | None = None):
         self.base_url = (base_url or os.environ.get("EVON_BASE_URL", "http://localhost:8000/v1")).rstrip("/")
         self.model = model or os.environ.get("EVON_MODEL", "model")
@@ -264,7 +266,16 @@ class EvonClient:
                                        "json_schema": {"name": "verdict", "schema": VERDICT_SCHEMA}}
         elif mode == "object":
             body["response_format"] = {"type": "json_object"}
-        resp = await self._http.post(f"{self.base_url}/chat/completions", json=body)
+        for attempt in range(3):
+            try:
+                resp = await self._http.post(f"{self.base_url}/chat/completions", json=body)
+                break
+            except httpx.ConnectError:
+                # Seen on Windows: the tunnel's hostname intermittently fails to resolve
+                # (getaddrinfo) for a few seconds while everything else works.
+                if attempt == 2:
+                    raise
+                await asyncio.sleep(0.5 * (attempt + 1))
         if resp.status_code == 400 and len(self.json_modes) > 1:
             # The server doesn't support this response_format; try the next, simpler one.
             log.info("Evon server rejected response_format %r, falling back", mode)
