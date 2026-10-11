@@ -5,4 +5,6 @@ numpy
 sounddevice
 pyyaml
 httpx
+fastapi
+uvicorn[standard]
 pytest
