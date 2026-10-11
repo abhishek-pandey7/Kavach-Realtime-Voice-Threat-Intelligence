@@ -9,6 +9,7 @@ microphone (Guardian mode), with or without Evon.
 import asyncio
 import json
 import logging
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -23,8 +24,9 @@ from kavach.detect.evon import EvonClient
 from kavach.detect.keywords import KeywordDetector
 from kavach.pipeline import KavachSession, RecordingSpeaker, SessionConfig
 from kavach.speak.player import play
-from kavach.speak.timbre import TimbreClient, load_voice
+from kavach.speak.timbre import Audio, TimbreClient, load_voice
 from kavach.stt.prisma import PrismaConfig, PrismaStream
+from kavach.telephony.exotel import ExotelStream, place_call
 
 log = logging.getLogger(__name__)
 STATIC = Path(__file__).parent / "static"
@@ -150,6 +152,70 @@ async def _run(req: StartRequest, source) -> None:
     except Exception as exc:  # surface failures on the dashboard
         log.exception("session failed")
         await hub.publish({"t": session._elapsed(), "type": "error", "message": repr(exc)})
+    finally:
+        if evon:
+            await evon.close()
+
+
+class CallRequest(BaseModel):
+    to: str  # a verified number, e.g. +919876543210
+    language: str = "hi-IN"
+
+
+@app.get("/api/config")
+async def config():
+    exotel = all(os.environ.get(k) for k in ("EXOTEL_SID", "EXOTEL_API_KEY", "EXOTEL_API_TOKEN",
+                                              "EXOTEL_CALLER_ID", "PUBLIC_WSS_BASE"))
+    return {"exotel": exotel, "evon_url": os.environ.get("EVON_BASE_URL")}
+
+
+@app.post("/api/exotel/call")
+async def exotel_call(req: CallRequest):
+    """'Bulao Kavach': Exotel rings the user, who merges Kavach into the suspicious call."""
+    base = os.environ.get("PUBLIC_WSS_BASE", "").rstrip("/")
+    if not base:
+        return JSONResponse({"error": "PUBLIC_WSS_BASE is not set"}, status_code=400)
+    stream_url = f"{base}/exotel/ws?sample-rate=16000&lang={req.language}"
+    try:
+        return await place_call(req.to, stream_url)
+    except Exception as exc:
+        return JSONResponse({"error": repr(exc)}, status_code=502)
+
+
+@app.websocket("/exotel/echo")
+async def exotel_echo(ws: WebSocket):
+    """First connectivity test: plays the caller's own voice back to them."""
+    await ws.accept()
+    stream = ExotelStream(ws, target_rate=16000)
+    buffer = bytearray()
+    try:
+        async for pcm in stream.audio():
+            buffer += pcm
+            if len(buffer) >= 16000 * 2:  # echo back each second of audio
+                await stream.speak(Audio(bytes(buffer), 16000), wait=False)
+                buffer.clear()
+    except WebSocketDisconnect:
+        pass
+
+
+@app.websocket("/exotel/ws")
+async def exotel_kavach(ws: WebSocket):
+    """Merge-in mode: Kavach listens to a live phone call and speaks into it."""
+    await ws.accept()
+    language = ws.query_params.get("lang", "hi-IN")
+    stream = ExotelStream(ws, target_rate=16000)
+    hub.history.clear()
+    await hub.publish({"t": 0, "type": "start", "source": "exotel", "file": None,
+                       "language": language, "evon": bool(os.environ.get("EVON_BASE_URL"))})
+    evon = EvonClient() if os.environ.get("EVON_BASE_URL") else None
+    config = SessionConfig(language=language, echo_guard=True, speak_sample_rate=16000)
+    session = KavachSession(config, detector, TimbreClient(), stream.speak, evon=evon,
+                            alerter=TelegramAlerter(), on_event=hub.publish)
+    prisma = PrismaStream(gnani_api_key(), PrismaConfig(language=language))
+    try:
+        await session.process(prisma.transcribe(stream.audio()))
+    except WebSocketDisconnect:
+        await hub.publish({"t": session._elapsed(), "type": "end", "report": session.report(), "stopped": True})
     finally:
         if evon:
             await evon.close()
