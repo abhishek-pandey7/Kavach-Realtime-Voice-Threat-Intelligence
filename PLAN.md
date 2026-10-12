@@ -641,7 +641,14 @@ If duo, split cleanly and **both** learn the whole system for individual intervi
 |---|---|
 | Oct 11 | Hackathon researched; Kavach chosen. Exotel account created (SID `elyratechnologies1`); number verification failed via missed call; ticket `DCA20261010853508` raised; support (Pooja Shetty) asked for SID, sent. Plan written. |
 | Oct 11 | Gnani API key created (`.env`; rotate before filming since it was pasted in chat). `scripts/smoke_test.py`: Timbre (Deepak, hi-IN, 16 kHz) → 2.7 s; Prisma REST transcribed it exactly, ~0.3 s server latency. Note: Prisma writes "CBI" as "सी बी आई" (spaced), so the L1 lexicon must normalise spaced acronyms. |
-| | **Next:** check credit cost of these two calls on the dashboard; decide Evon hosting; start the streaming mic → Prisma WS client. |
+| Oct 11 (overnight build) | Built on separate branches: Prisma streaming client (found undocumented `x-partials` header: partials every ~450 ms), multilingual keyword detector with OTP/ID masking, Evon client (evidence guard, UNCERTAIN, majority vote), risk scorer and escalation ladder, Timbre warnings (10 Hindi warnings pre-generated and cached), end-to-end pipeline with echo guard and Telegram alerts, live dashboard, evaluation pipeline, Exotel adapter, Kaggle notebook for Evon. 52 tests passing. |
+| Oct 11 | Evon: not on HF Inference Providers; GGUF repo is **not gated** (card is outdated). Laptop (6 GB GPU, 16 GB RAM) can't run it, so plan is Kaggle 2×T4 with Q4_K_M (`deploy/kaggle_evon.ipynb`). |
+| Oct 11 | Prisma `connected` event always reports 16 kHz regardless of `x-sample-rate`; Kavach now always streams 16 kHz and simulates phone bandwidth locally. |
+| Oct 11 | First eval (keywords only, 6 synthetic Hindi calls, phone line clean to 0 dB SNR): scams warned 3/3, false alarms 0/3 in every condition, Prisma CER ~4%, median warning ~17 s after first red flag. Noise is generated, not recorded. |
+| Oct 11 | Exotel sales call booked for Oct 12, 4 PM (`EXOTEL_MEETING.md`, local only). |
+| Oct 11 | Evon hosted on Kaggle (needed `GGML_CUDA_NO_VMM=ON` to build). Tuned: few-shot prompt, enforced JSON schema (4-bit model loops when copying Devanagari), fuzzy evidence guard, vote before HARD, greedy first pass. Found and fixed scorer bugs (UNCERTAIN muting keywords; unconfirmed SCAM race). |
+| Oct 11 to 12 | 12 more hand-written calls (Evon-written ones unusable). Text eval: keywords 13/18, keywords + Evon 17/18 (miss: task job). **Audio eval, 18 calls x 2 phone conditions: 9/9 scams with HARD warnings, 0/9 false alarms, 0 Evon errors.** Credits used so far: about 45 of 5,000. |
+| | **Next:** live Guardian test with a real phone on speaker; Telegram bot; warn faster (12 to 16 s after first red flag); voice clone with consent; review the 12 Hindi scripts; Exotel sales follow-up (Mon to Fri); write the video script. |
 
 ### Open questions
 - [ ] Registered for the challenge yet? Credits email received?

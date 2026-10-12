@@ -1,0 +1,13 @@
+# Synthetic genuine call (hard negative), insurance renewal reminder. Fictional.
+id: hi_insurance_genuine_01
+language: hi-IN
+label: genuine
+scam_type: none
+reviewed: false
+voices: {caller: Jwala, receiver: Vikrant}
+turns:
+- [caller, 'नमस्ते सर, मैं आपकी हेल्थ इंश्योरेंस कंपनी से बोल रही हूं। आपकी पॉलिसी अगले महीने की दस तारीख को खत्म हो रही है।']
+- [receiver, 'हां, रिन्यू करना है।']
+- [caller, 'आप कंपनी की वेबसाइट पर लॉगिन करके रिन्यू कर सकते हैं, या मैं आपके रजिस्टर्ड ईमेल पर लिंक भेज दूं?']
+- [receiver, 'ईमेल पर भेज दीजिए, मैं देख लूंगा।']
+- [caller, 'ठीक है सर, आराम से देख लीजिए, अभी पंद्रह दिन का समय है। धन्यवाद।']

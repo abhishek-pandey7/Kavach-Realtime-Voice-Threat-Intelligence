@@ -1,0 +1,13 @@
+# Synthetic scam call for testing. Fictional names and numbers only.
+id: hi_bank_kyc_01
+language: hi-IN
+label: scam
+scam_type: bank_kyc
+voices: {caller: Vikrant, receiver: Urmila}
+turns:
+  - [caller, "नमस्ते, मैं आपके बैंक के केवाईसी डिपार्टमेंट से बोल रहा हूं।"]
+  - [receiver, "जी, क्या हुआ?"]
+  - [caller, "आपका केवाईसी एक्सपायर हो गया है, आज रात तक अपडेट नहीं किया तो आपका अकाउंट ब्लॉक हो जाएगा।"]
+  - [receiver, "अरे, अब क्या करना होगा?"]
+  - [caller, "घबराइए मत, मैं अभी अपडेट कर देता हूं। आपके फोन पर एक ओटीपी आया होगा, वो जल्दी बता दीजिए।"]
+  - [caller, "और प्ले स्टोर से एनीडेस्क ऐप डाउनलोड कर लीजिए, मैं आपकी मदद कर दूंगा।"]

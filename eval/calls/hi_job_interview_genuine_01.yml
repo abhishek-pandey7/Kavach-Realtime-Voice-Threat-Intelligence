@@ -1,0 +1,13 @@
+# Synthetic genuine call (hard negative), job interview scheduling. Fictional.
+id: hi_job_interview_genuine_01
+language: hi-IN
+label: genuine
+scam_type: none
+reviewed: false
+voices: {caller: Yashvi, receiver: Jalaj}
+turns:
+- [caller, 'हेलो, मैं एक सॉफ्टवेयर कंपनी की एचआर टीम से बोल रही हूं। आपने हमारी वेबसाइट पर डेवलपर की नौकरी के लिए अप्लाई किया था।']
+- [receiver, जी हां।]
+- [caller, 'आपका पहला इंटरव्यू गुरुवार को दोपहर तीन बजे ऑनलाइन होगा, मैं ईमेल पर लिंक भेज दूंगी।']
+- [receiver, 'क्या इसके लिए कोई फीस है?']
+- [caller, 'नहीं, बिल्कुल नहीं। हमारी कंपनी किसी भी चरण में कोई फीस नहीं लेती। ऑल द बेस्ट।']

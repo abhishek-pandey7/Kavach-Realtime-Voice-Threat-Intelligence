@@ -1,0 +1,14 @@
+# Synthetic scam call written for evaluation. Fictional names only.
+id: hi_task_job_01
+language: hi-IN
+label: scam
+scam_type: prize_job
+reviewed: false
+voices: {caller: Yashvi, receiver: Roopesh}
+turns:
+- [caller, 'हेलो सर, मैं एक डिजिटल मार्केटिंग कंपनी से बोल रही हूं। घर बैठे पार्ट टाइम काम करके रोज दो से तीन हजार कमा सकते हैं।']
+- [receiver, 'क्या काम करना होगा?']
+- [caller, बस यूट्यूब वीडियो लाइक करने हैं और स्क्रीनशॉट भेजना है। हर टास्क के पचास रुपये मिलेंगे।]
+- [receiver, 'अच्छा, ठीक है।']
+- [caller, 'पहले तीन टास्क फ्री हैं। उसके बाद प्रीमियम टास्क के लिए आपको एक हजार रुपये जमा करने होंगे, उस पर तीस प्रतिशत रिटर्न मिलेगा।']
+- [caller, 'आज ही जमा करेंगे तो बोनस भी मिलेगा, यह ऑफर कल तक ही है।']

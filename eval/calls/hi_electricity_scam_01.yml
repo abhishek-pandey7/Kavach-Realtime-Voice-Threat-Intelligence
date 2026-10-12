@@ -1,0 +1,13 @@
+# Synthetic scam call written for evaluation. Fictional names and numbers only.
+id: hi_electricity_scam_01
+language: hi-IN
+label: scam
+scam_type: utility_disconnection
+reviewed: false
+voices: {caller: Hemraj, receiver: Bhavna}
+turns:
+- [caller, 'नमस्कार, बिजली विभाग से बोल रहे हैं। आपका पिछले महीने का बिल अपडेट नहीं हुआ है।']
+- [receiver, मैंने तो बिल भर दिया था।]
+- [caller, सिस्टम में नहीं दिख रहा। आज रात साढ़े नौ बजे आपका कनेक्शन काट दिया जाएगा।]
+- [receiver, 'अरे, घर में बुजुर्ग हैं, बिजली नहीं जानी चाहिए।']
+- [caller, 'तो अभी तुरंत तेरह रुपये का छोटा पेमेंट कर दीजिए, मैं एक लिंक भेज रहा हूं, उस पर अपने कार्ड की डिटेल डाल दीजिए।']

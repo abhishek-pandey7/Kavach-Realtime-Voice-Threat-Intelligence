@@ -1,0 +1,12 @@
+# Synthetic scam call written for evaluation. Fictional names only.
+id: hi_kbc_lottery_01
+language: hi-IN
+label: scam
+scam_type: prize_job
+reviewed: false
+voices: {caller: Deepak, receiver: Ambuja}
+turns:
+- [caller, 'बधाई हो, आपका मोबाइल नंबर कौन बनेगा करोड़पति की लकी ड्रॉ में चुना गया है, आपने पच्चीस लाख रुपये जीते हैं।']
+- [receiver, 'सच में? मैंने तो कोई फॉर्म नहीं भरा।']
+- [caller, यह सिम कंपनी की तरफ से है। आपका इनाम आपके खाते में आज ही आ जाएगा।]
+- [caller, 'बस प्रोसेसिंग और जीएसटी के लिए बारह हजार पांच सौ रुपये पहले जमा करने होंगे। यह बात अभी किसी को मत बताइए, वरना इनाम रद्द हो सकता है।']

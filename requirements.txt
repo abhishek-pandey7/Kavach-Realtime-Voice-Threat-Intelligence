@@ -1,2 +1,10 @@
 requests
 python-dotenv
+websockets>=13
+numpy
+sounddevice
+pyyaml
+httpx
+fastapi
+uvicorn[standard]
+pytest

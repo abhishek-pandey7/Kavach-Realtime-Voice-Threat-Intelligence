@@ -1,0 +1,184 @@
+# Hindi red-flag phrases, in Devanagari (Prisma hi-IN output) and Latin
+# (Hinglish, Prisma en-IN output). English loanwords are written the way
+# Prisma transcribes them ("पार्सल", "ड्रग्स").
+#
+# Phrases are normalised the same way as transcripts (lowercase, no nukta,
+# chandrabindu -> anusvara) and spaces match optional whitespace, so
+# "सी बी आई" also matches "सीबीआई". Entries starting with "re:" are regexes.
+
+hook:
+  - पार्सल
+  - कूरियर
+  - कुरियर
+  - पैकेज
+  - केवाईसी
+  - के वाई सी
+  - रिफंड
+  - गलती से पैसे
+  - बिजली का बिल
+  - बिजली बिल
+  - parcel
+  - courier
+  - kyc
+  - galti se paise
+
+fake_authority:
+  - सी बी आई
+  - पुलिस
+  - क्राइम ब्रांच
+  - साइबर सेल
+  - साइबर क्राइम
+  - ईडी ऑफिस
+  - प्रवर्तन निदेशालय
+  - एनफोर्समेंट डायरेक्टरेट
+  - कस्टम्स
+  - re:कस्टम (?:विभाग|ऑफिस|डिपार्टमेंट|अधिकारी|से)
+  - नारकोटिक्स
+  - एनसीबी
+  - आरबीआई
+  - रिजर्व बैंक
+  - इनकम टैक्स
+  - टेलीकॉम विभाग
+  - re:ट्राई (?:से|की|ऑफिस)
+  - कोर्ट
+  - सुप्रीम कोर्ट
+  - जज साहब
+  - re:(?:आईपीएस|सीनियर) (?:ऑफिसर|अफसर)
+  - इंस्पेक्टर
+  - re:(?:ऑफिसर|अफसर) बोल रहा
+  - फेडेक्स
+  - फेड एक्स
+  - mumbai police
+  - crime branch
+  - cyber cell
+  - inspector
+  - customs
+  - narcotics
+
+threat:
+  - डिजिटल अरेस्ट
+  - re:गिरफ्तार
+  - अरेस्ट
+  - वारंट
+  - एफ आई आर
+  - re:केस (?:दर्ज|रजिस्टर|फाइल)
+  - मनी लॉन्ड्रिंग
+  - मनी लांड्रिंग
+  - ड्रग
+  - गैरकानूनी
+  - गैर कानूनी
+  - अवैध
+  - जेल
+  - कानूनी कार्रवाई
+  - लीगल एक्शन
+  - re:(?:अकाउंट|खाता) (?:बंद|ब्लॉक|फ्रीज|सील)
+  - re:सिम (?:बंद|ब्लॉक)
+  - re:(?:बिजली|कनेक्शन) (?:कट|काट)
+  - digital arrest
+  - arrest
+  - warrant
+  - money laundering
+  - drugs
+  - jail
+  - re:account (?:band|block|freeze)
+
+secrecy:
+  - re:किसी को (?:भी )?(?:मत|नहीं|ना) बता
+  - re:किसी से (?:भी )?(?:बात )?(?:मत|नहीं|ना) (?:कर|बता)
+  - re:(?:घर ?वालों|परिवार|फैमिली|बच्चों) को (?:मत|नहीं|ना)
+  - गोपनीय
+  - कॉन्फिडेंशियल
+  - सीक्रेट
+  - re:(?:कॉल|फोन) (?:मत|नहीं|ना) (?:काट|कट)
+  - re:वीडियो कॉल (?:पर|पे) (?:रह|बने)
+  - re:कैमरा (?:ऑन|चालू)
+  - re:(?:कमरे|रूम) में अकेले
+  - re:kisi ko (?:bhi )?(?:mat|nahi|na) bata
+  - re:(?:call|phone) (?:mat|nahi|na) (?:kaat|kat)
+  - confidential
+  - re:video call (?:pe|par) (?:rahi|rahe|rahna)
+
+urgency:
+  - तुरंत
+  - फौरन
+  - अभी के अभी
+  - re:(?:दो|2|एक|1) घंटे (?:में|के अंदर)
+  - आज रात तक
+  - आखिरी मौका
+  - जल्दी कीजिए
+  - turant
+  - abhi ke abhi
+  - last chance
+
+payment_demand:
+  - re:पैसे? (?:ट्रांसफर|भेज)
+  - re:(?:रकम|राशि|अमाउंट) (?:ट्रांसफर|भेज|जमा)
+  # Imperatives only: "कॉल ट्रांसफर कर रहा हूं" (transferring the call) is not a payment demand.
+  - re:ट्रांसफर (?:कीजिए|करो|करें|कर दीजिए|कर दो|करना होगा)
+  - वेरिफिकेशन के लिए
+  - वेरिफिकेशन अमाउंट
+  - सेफ अकाउंट
+  - सुरक्षित खाते
+  - आरबीआई अकाउंट
+  - जुर्माना
+  - re:फाइन (?:भर|जमा|देना)
+  - सिक्योरिटी डिपॉजिट
+  - प्रोसेसिंग फीस
+  - रजिस्ट्रेशन फीस
+  - गिफ्ट कार्ड
+  - re:क्यू ?आर कोड
+  - re:paise? (?:transfer|bhej)
+  - safe account
+  - verification amount
+  - security deposit
+  - processing fee
+  - gift card
+
+credential_request:
+  - ओटीपी
+  - ओ टी पी
+  - re:(?:यूपीआई|एटीएम) पिन
+  - re:पिन (?:बता|डाल|नंबर)
+  - सीवीवी
+  - पासवर्ड
+  - आधार नंबर
+  - आधार कार्ड नंबर
+  - कार्ड नंबर
+  - कार्ड के पीछे
+  # OTP described without the word: "the code / the six-digit number / the message that came"
+  - re:(?:छह|चार|6|4) अंकों का
+  - re:(?:कोड|अंक|मैसेज|संदेश)\S* (?:मुझे )?(?:बता|पढ़|पढ|सुना)
+  - re:(?:code|message) (?:bata|padh|suna)
+  - <otp>
+  - <card_no>
+  - <aadhaar>
+  - otp
+  - upi pin
+  - cvv
+
+remote_access:
+  - एनीडेस्क
+  - एनी डेस्क
+  - टीमव्यूअर
+  - टीम व्यूअर
+  - क्विक सपोर्ट
+  - स्क्रीन शेयर
+  - re:(?:ऐप|एप|एप्लीकेशन) डाउनलोड
+  - एपीके
+  - re:लिंक (?:पर|पे) क्लिक
+  - anydesk
+  - teamviewer
+  - screen share
+  - re:app download
+
+too_good:
+  - लॉटरी
+  - इनाम जीत
+  - कैशबैक
+  - केबीसी
+  - कौन बनेगा करोड़पति
+  - वर्क फ्रॉम होम
+  - re:टास्क (?:पूरा|कंप्लीट)
+  - lottery
+  - kbc
+  - cashback
