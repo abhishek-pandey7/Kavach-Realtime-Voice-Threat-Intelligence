@@ -154,3 +154,13 @@ def test_strong_keywords_skip_straight_to_the_vote(detector):
     assert evon.consistent_calls >= 1
     assert {"first_flag", "evon_confirmed_scam", "warn_hard"} <= set(report["timeline"])
     assert report["timeline"]["first_flag"] <= report["timeline"]["warn_hard"]
+
+
+def test_flagged_call_gets_a_debrief(detector):
+    events = []
+    verdict = Verdict("SCAM", 95, "digital_arrest", "extraction", [RedFlag("threat", "ड्रग्स")])
+    session = KavachSession(SessionConfig(echo_guard=False), detector, FakeTimbre(), RecordingSpeaker(),
+                            evon=FakeEvon(verdict), on_event=events.append)
+    report = run(session, SCAM)
+    assert "डिजिटल अरेस्ट" in report["debrief"]["summary"]
+    assert [e["type"] for e in events].index("debrief") < [e["type"] for e in events].index("end")

@@ -98,6 +98,11 @@
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   body.alarm { animation: alarm 1s ease-in-out 3; }
   @keyframes alarm { 50% { box-shadow: inset 0 0 0 6px var(--hard); } }
+  .debrief { margin-top: 6px; padding: 16px; border-radius: 12px; background: var(--panel-2); border: 1px solid var(--line); animation: rise .3s ease-out; }
+  .debrief h4 { margin: 0 0 8px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .debrief p { margin: 0 0 10px; font-size: 17px; line-height: 1.55; }
+  .debrief ol { margin: 0 0 12px; padding-left: 20px; line-height: 1.6; }
+  .debrief pre { white-space: pre-wrap; font: 13px/1.5 ui-monospace, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin: 0 0 8px; max-height: 220px; overflow: auto; }
   .disclaimer { position: fixed; right: 12px; bottom: 10px; font-size: 11px; color: var(--faint); }
 </style>
 </head>
@@ -274,6 +279,20 @@ function onWarning(e) {
   }
 }
 
+function onDebrief(e) {
+  clearEmpty();
+  const el = document.createElement("div");
+  el.className = "debrief";
+  el.innerHTML = `<h4>After the call · what happened</h4><p>${escapeHtml(e.summary)}</p>
+    <h4>What to do now</h4><ol>${e.next_steps.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ol>
+    <h4>Complaint draft for 1930 / cybercrime.gov.in</h4><pre>${escapeHtml(e.complaint_draft)}</pre>
+    <button class="btn">Copy complaint draft</button>`;
+  el.querySelector("button").onclick = (ev) => navigator.clipboard.writeText(e.complaint_draft)
+    .then(() => { ev.target.textContent = "Copied ✓"; });
+  $("transcript").appendChild(el);
+  scrollDown();
+}
+
 function onAlert(e) { $("tAlert").textContent = e.sent ? "sent ✓" : "logged (no Telegram)"; }
 
 function setLive(live) {
@@ -316,6 +335,7 @@ function handle(e) {
     case "warning": onWarning(e); break;
     case "alert": onAlert(e); break;
     case "error": clearEmpty(); $("transcript").insertAdjacentHTML("beforeend", `<div class="note">Error: ${escapeHtml(e.message)}</div>`); setLive(false); break;
+    case "debrief": onDebrief(e); break;
     case "end": setLive(false); $("transcript").insertAdjacentHTML("beforeend", `<div class="note">Call ended · peak risk ${e.report.peak_risk} · ${e.report.warnings.length} warning(s)</div>`); scrollDown(); break;
   }
 }
