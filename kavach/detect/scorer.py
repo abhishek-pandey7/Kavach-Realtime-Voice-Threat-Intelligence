@@ -66,6 +66,10 @@ class RiskScorer:
         if verdict.error is None:
             self.verdict = verdict
 
+    def keyword_core_categories(self) -> int:
+        """Distinct keyword red-flag categories beyond the opening hook."""
+        return len({h.category for h in self.hits.values()} - {"hook", "too_good"})
+
     def keyword_risk(self) -> int:
         hits = list(self.hits.values())
         core = [s for s in stages(hits) if s != "hook"]

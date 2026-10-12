@@ -66,6 +66,13 @@ class KavachSession:
         self._evon_task: asyncio.Task | None = None
         self._evon_dirty = False
         self._tasks: set[asyncio.Task] = set()
+        self._partial = ""  # latest partial transcript of the utterance in progress
+        self._seen_categories: set[str] = set()
+        # When each milestone first happened (monotonic), to see where warning delay goes.
+        self.timeline: dict[str, float] = {}
+
+    def _mark(self, name: str, at: float | None = None) -> None:
+        self.timeline.setdefault(name, at or time.monotonic())
 
     def _elapsed(self, now: float | None = None) -> float:
         return round((now or time.monotonic()) - self.t0, 2)
@@ -102,14 +109,24 @@ class KavachSession:
         hits = self.detector.scan(t.text)
         if hits and self.first_flag_at is None:
             self.first_flag_at = now
+            self._mark("first_flag", now)
         self.scorer.add_hits(hits)
+        new_categories = {h.category for h in hits} - self._seen_categories
+        self._seen_categories |= new_categories
         await self._emit({
             "type": "transcript", "final": t.is_final, "text": sanitize(t.text),
             "flags": [{"category": h.category, "phrase": h.phrase} for h in hits],
         })
         if t.is_final and t.text.strip():
+            self._partial = ""
             self.lines.append(t.text)
             self._schedule_evon()
+        elif not t.is_final:
+            self._partial = t.text
+            if new_categories:
+                # A new kind of red flag mid-sentence: ask Evon now instead of
+                # waiting for the speaker to pause.
+                self._schedule_evon()
         await self._update(now)
 
     def _schedule_evon(self) -> None:
@@ -124,12 +141,22 @@ class KavachSession:
         while True:
             self._evon_dirty = False
             lines = self.lines[-self.config.evon_window_lines:]
+            if self._partial:
+                lines = [*lines, self._partial]
             started = time.monotonic()
-            verdict = await self.evon.assess(lines, self.config.language)
-            if verdict.verdict == "SCAM" and not verdict.votes:
-                # Confirm before the scorer sees it: a transcript arriving mid-vote
-                # must not act on an unconfirmed SCAM (caused a false alarm in eval).
+            if self.scorer.keyword_core_categories() >= 2:
+                # Keywords already look like a scam: go straight to the vote (one
+                # round trip instead of a single answer followed by a vote).
                 verdict = await self.evon.assess_consistent(lines, self.config.language, self.config.vote_samples)
+            else:
+                verdict = await self.evon.assess(lines, self.config.language)
+                if verdict.verdict == "SCAM" and not verdict.votes:
+                    # Confirm before the scorer sees it: a transcript arriving mid-vote
+                    # must not act on an unconfirmed SCAM (caused a false alarm in eval).
+                    self._mark("evon_first_scam")
+                    verdict = await self.evon.assess_consistent(lines, self.config.language, self.config.vote_samples)
+            if verdict.verdict == "SCAM" and verdict.error is None:
+                self._mark("evon_confirmed_scam")
             self.scorer.add_verdict(verdict)
             await self._emit({
                 "type": "verdict", "verdict": verdict.verdict, "risk": verdict.risk,
@@ -183,6 +210,7 @@ class KavachSession:
                     "after_first_flag_s": round(started - self.first_flag_at, 2) if self.first_flag_at else None,
                 }
                 self.warnings.append(record)
+                self._mark(f"warn_{level.name.lower()}", started)
                 await self._emit({"type": "warning", **record})
                 await self.speaker(audio)
 
@@ -210,6 +238,7 @@ class KavachSession:
             },
             "first_flag_at_s": self._elapsed(self.first_flag_at) if self.first_flag_at else None,
             "warnings": self.warnings,
+            "timeline": {name: self._elapsed(at) for name, at in sorted(self.timeline.items(), key=lambda kv: kv[1])},
         }
 
 

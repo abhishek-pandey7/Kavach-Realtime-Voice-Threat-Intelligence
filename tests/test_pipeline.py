@@ -116,3 +116,41 @@ def test_echo_guard_ignores_kavach_own_voice(detector):
     session.speaking_until = time.monotonic() + 60
     run(session, ["कोई पैसे या ओटीपी मत दीजिए"])
     assert [e["type"] for e in events if e["type"] != "end"] == ["ignored"]
+
+
+class CountingEvon(FakeEvon):
+    def __init__(self, verdict):
+        super().__init__(verdict)
+        self.seen, self.consistent_calls = [], 0
+
+    async def assess(self, lines, language="hi-IN", temperature=0.0):
+        self.seen.append(list(lines))
+        return await super().assess(lines, language, temperature)
+
+    async def assess_consistent(self, lines, language="hi-IN", samples=3):
+        self.consistent_calls += 1
+        self.seen.append(list(lines))
+        return await super().assess_consistent(lines, language, samples)
+
+
+async def partials(texts):
+    for i, text in enumerate(texts):
+        yield Transcript(text, False, "u0", i, 500, 0, time.monotonic())
+        await asyncio.sleep(0.02)
+
+
+def test_new_red_flag_in_a_partial_asks_evon_before_the_sentence_ends(detector):
+    evon = CountingEvon(Verdict("UNCERTAIN", 40))
+    session = KavachSession(SessionConfig(echo_guard=False), detector, FakeTimbre(), RecordingSpeaker(), evon=evon)
+    asyncio.run(session.process(partials(["मैं सीबीआई से", "मैं सीबीआई से बोल रहा हूं"])))
+    assert evon.seen and evon.seen[0][-1] == "मैं सीबीआई से"  # the partial text was sent
+    assert len(evon.seen) == 1  # the second partial added no new category
+
+
+def test_strong_keywords_skip_straight_to_the_vote(detector):
+    evon = CountingEvon(Verdict("SCAM", 95, "digital_arrest", "extraction", [RedFlag("threat", "ड्रग्स")]))
+    session = KavachSession(SessionConfig(echo_guard=False), detector, FakeTimbre(), RecordingSpeaker(), evon=evon)
+    report = run(session, SCAM)
+    assert evon.consistent_calls >= 1
+    assert {"first_flag", "evon_confirmed_scam", "warn_hard"} <= set(report["timeline"])
+    assert report["timeline"]["first_flag"] <= report["timeline"]["warn_hard"]
