@@ -54,6 +54,7 @@ class CallResult:
     cer: float
     transcript: str
     error: str | None = None
+    timeline: dict | None = None  # seconds from call start: first_flag, evon_confirmed_scam, warn_soft, warn_hard
 
 
 def edit_distance(a: str, b: str) -> int:
@@ -127,6 +128,7 @@ async def run_one(script: dict, call_wav: Path, condition: str, index: int, api_
         after_first_flag_s=first["after_first_flag_s"] if first else None,
         evon_verdict=report["evon"]["verdict"] if report["evon"] else None,
         cer=round(cer(reference, hypothesis), 3), transcript=hypothesis, error=error,
+        timeline=report.get("timeline"),
     )
 
 
@@ -208,6 +210,23 @@ def write_report(results: list[CallResult], path: Path, evon_used: bool) -> None
         lines.append(f"| {r['condition']} | {_pct(r['recall'])} ({r['scam_calls']} calls) | {_pct(r['hard_rate'])} | "
                      f"{_pct(r['false_alarm_rate'])} ({r['genuine_calls']} calls) | {_sec(r['median_warn_s'])} | "
                      f"{_sec(r['median_after_flag_s'])} | {r['mean_cer']:.3f} |")
+    gaps = {
+        "first red flag -> Evon confirms SCAM": ("first_flag", "evon_confirmed_scam"),
+        "Evon confirms SCAM -> HARD warning starts": ("evon_confirmed_scam", "warn_hard"),
+        "first red flag -> first warning (any level)": ("first_flag", "first_warning"),
+    }
+    timed = [r for r in results if r.label == "scam" and r.timeline]
+    if timed:
+        lines += ["", "## Where the warning delay goes (scam calls, median)", "", "| Step | Median | Calls |", "|---|---|---|"]
+        for name, (a, b) in gaps.items():
+            values = []
+            for r in timed:
+                tl = dict(r.timeline)
+                if r.first_warning_s is not None:
+                    tl["first_warning"] = r.first_warning_s
+                if a in tl and b in tl:
+                    values.append(tl[b] - tl[a])
+            lines.append(f"| {name} | {_sec(statistics.median(values)) if values else '–'} | {len(values)} |")
     lines += ["", "## Per call", "",
               "| Call | Label | Condition | Level | Peak risk | First warning | Evon | CER |",
               "|---|---|---|---|---|---|---|---|"]
