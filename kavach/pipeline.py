@@ -16,6 +16,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 
 from kavach.alerts.telegram import TelegramAlerter, format_alert
+from kavach.debrief import build_debrief
 from kavach.detect.evon import EvonClient
 from kavach.detect.keywords import KeywordDetector
 from kavach.detect.normalize import sanitize
@@ -98,6 +99,10 @@ class KavachSession:
         if self._tasks:
             await asyncio.gather(*self._tasks, return_exceptions=True)
         report = self.report()
+        debrief = build_debrief(report, self.config.language)
+        if debrief:
+            report["debrief"] = debrief
+            await self._emit({"type": "debrief", **debrief})
         await self._emit({"type": "end", "report": report})
         return report
 
